@@ -4,7 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "lint": "cd apps/api && eslint .",
+    "lint:fix": "cd apps/api && eslint . --fix",
+    "format": "cd apps/api && prettier . --write",
+    "prepare": "husky"
   },
   "repository": {
     "type": "git",
@@ -17,5 +20,8 @@
   "bugs": {
     "url": "https://github.com/Bailsby/api-monitoring-saas/issues"
   },
-  "homepage": "https://github.com/Bailsby/api-monitoring-saas#readme"
+  "homepage": "https://github.com/Bailsby/api-monitoring-saas#readme",
+  "devDependencies": {
+    "husky": "^9.1.7"
+  }
 }

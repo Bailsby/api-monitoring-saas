@@ -1,0 +1,2 @@
+echo "🔥 HUSKY IS RUNNING"
+cd apps/api && npx lint-staged
