@@ -1,2 +1,10 @@
-echo "🔥 HUSKY IS RUNNING"
-cd apps/api && npx lint-staged
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+cd apps/api
+
+echo "🔥 Running lint-staged..."
+npx lint-staged
+
+echo "🧪 Running tests..."
+npm run test

@@ -1,39 +1,9 @@
-import Fastify from 'fastify'
+import { buildApp } from './app.js'
 import { prisma } from './lib/prisma.js'
 import { checkEndpoints } from './jobs/checkEndpoints.js'
 
-const app = Fastify({
-  logger: true,
-})
+const app = buildApp({ prisma })
 
-app.get('/health', async () => {
-  return {
-    status: 'ok',
-  }
-})
-
-app.get('/endpoints', async () => {
-  return prisma.monitoredEndpoint.findMany()
-})
-
-app.post('/endpoints', async (request) => {
-  const body = request.body as {
-    url: string
-  }
-
-  const endpoint = await prisma.monitoredEndpoint.create({
-    data: {
-      url: body.url,
-    },
-  })
-
-  return endpoint
-})
-
-/**
- * Monitoring loop
- * Runs every 30 seconds
- */
 setInterval(async () => {
   try {
     await checkEndpoints()

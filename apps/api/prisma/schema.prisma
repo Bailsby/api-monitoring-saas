@@ -7,7 +7,20 @@ datasource db {
 }
 
 model MonitoredEndpoint {
-  id        String   @id @default(cuid())
+  id        String          @id @default(cuid())
   url       String
-  createdAt DateTime @default(now())
+  createdAt DateTime        @default(now())
+
+  checks    EndpointCheck[]
+}
+
+model EndpointCheck {
+  id           String   @id @default(cuid())
+  statusCode   Int?
+  responseTime Int
+  isUp         Boolean
+  checkedAt    DateTime @default(now())
+
+  endpointId String
+  endpoint   MonitoredEndpoint @relation(fields: [endpointId], references: [id], onDelete: Cascade)
 }
