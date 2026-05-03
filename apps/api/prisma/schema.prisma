@@ -21,6 +21,8 @@ model EndpointCheck {
   isUp         Boolean
   checkedAt    DateTime @default(now())
 
+  errorType    String?
+
   endpointId String
   endpoint   MonitoredEndpoint @relation(fields: [endpointId], references: [id], onDelete: Cascade)
 }

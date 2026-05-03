@@ -1,5 +1,12 @@
 import { prisma } from '../lib/prisma.js'
 
+type CheckResult = {
+  statusCode: number
+  isUp: boolean
+  responseTime: number
+  errorType: 'ok' | 'timeout' | 'dns_error' | 'network_error' | 'http_error'
+}
+
 export const checkEndpoints = async () => {
   const endpoints = await prisma.monitoredEndpoint.findMany()
 
@@ -12,33 +19,49 @@ export const checkEndpoints = async () => {
         controller.abort()
       }, 10_000)
 
-      let response
-      let statusCode: number
-      let isUp: boolean
+      let result: CheckResult
 
       try {
-        response = await fetch(endpoint.url, {
+        const response = await fetch(endpoint.url, {
           method: 'GET',
           signal: controller.signal,
         })
 
-        statusCode = response.status
-        isUp = response.ok
-      } catch {
-        statusCode = 0
-        isUp = false
-      } finally {
+        const responseTime = Date.now() - start
         clearTimeout(timeout)
-      }
 
-      const responseTime = Date.now() - start
+        const statusCode = response.status
+
+        const isUp = statusCode >= 200 && statusCode < 400
+
+        result = {
+          statusCode,
+          isUp,
+          responseTime,
+          errorType: isUp ? 'ok' : 'http_error',
+        }
+      } catch (err: unknown) {
+        const responseTime = Date.now() - start
+        clearTimeout(timeout)
+
+        const isAbortError =
+          err instanceof DOMException && err.name === 'AbortError'
+
+        result = {
+          statusCode: 0,
+          isUp: false,
+          responseTime,
+          errorType: isAbortError ? 'timeout' : 'network_error',
+        }
+      }
 
       await prisma.endpointCheck.create({
         data: {
           endpointId: endpoint.id,
-          statusCode,
-          responseTime,
-          isUp,
+          statusCode: result.statusCode,
+          responseTime: result.responseTime,
+          isUp: result.isUp,
+          errorType: result.errorType,
         },
       })
     }),

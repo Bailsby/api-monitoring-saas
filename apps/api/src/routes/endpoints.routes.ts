@@ -37,6 +37,12 @@ export const endpointRoutes = async (
       orderBy: {
         checkedAt: 'desc',
       },
+      select: {
+        isUp: true,
+        responseTime: true,
+        checkedAt: true,
+        errorType: true,
+      },
     })
 
     const stats = calculateEndpointStats(checks)

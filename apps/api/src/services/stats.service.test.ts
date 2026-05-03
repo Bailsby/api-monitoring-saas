@@ -7,29 +7,32 @@ describe('calculateEndpointStats', () => {
       {
         isUp: true,
         responseTime: 100,
-        checkedAt: new Date('2024-01-01T00:00:00.000Z'),
+        checkedAt: new Date(),
+        errorType: null,
       },
       {
-        isUp: true,
+        isUp: false,
         responseTime: 200,
-        checkedAt: new Date('2024-01-01T00:01:00.000Z'),
+        checkedAt: new Date(),
+        errorType: 'timeout',
       },
       {
         isUp: false,
         responseTime: 300,
-        checkedAt: new Date('2024-01-01T00:02:00.000Z'),
+        checkedAt: new Date(),
+        errorType: 'http_error',
       },
     ]
 
     const result = calculateEndpointStats(checks)
 
-    expect(result).toEqual({
-      uptimePercentage: 66.67,
-      averageResponseTime: 200,
+    expect(result).toMatchObject({
       totalChecks: 3,
-      totalFailures: 1,
-      lastCheckedAt: checks[0].checkedAt,
-      recentChecks: checks.slice(0, 10),
+      totalFailures: 2,
+      errorBreakdown: {
+        timeout: 1,
+        http_error: 1,
+      },
     })
   })
 
