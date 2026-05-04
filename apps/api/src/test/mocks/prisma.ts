@@ -18,5 +18,10 @@ export const prismaMock = {
 
   endpointCheck: {
     findMany: vi.fn(),
+    create: vi.fn(),
+  },
+
+  workerRun: {
+    create: vi.fn(),
   },
 }

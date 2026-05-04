@@ -5,8 +5,10 @@
   "main": "index.js",
   "scripts": {
     "dev": "tsx watch src/server.ts",
+    "dev:worker": "tsx watch src/worker.ts",
     "build": "tsc",
     "start": "node dist/server.js",
+    "start:worker": "node dist/worker.js",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier . --write",
@@ -28,6 +30,7 @@
     "@prisma/client": "^7.8.0",
     "dotenv": "^17.4.2",
     "fastify": "^5.8.5",
+    "p-limit": "^7.3.0",
     "pg": "^8.20.0"
   },
   "devDependencies": {

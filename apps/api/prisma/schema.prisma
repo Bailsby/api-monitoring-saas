@@ -26,3 +26,13 @@ model EndpointCheck {
   endpointId String
   endpoint   MonitoredEndpoint @relation(fields: [endpointId], references: [id], onDelete: Cascade)
 }
+
+model WorkerRun {
+  id            String   @id @default(cuid())
+  startedAt     DateTime
+  durationMs    Int
+  total         Int
+  successful    Int
+  failures      Int
+  createdAt     DateTime @default(now())
+}

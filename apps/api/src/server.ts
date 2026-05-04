@@ -1,16 +1,7 @@
 import { buildApp } from './app.js'
 import { prisma } from './lib/prisma.js'
-import { checkEndpoints } from './jobs/checkEndpoints.js'
 
 const app = buildApp({ prisma })
-
-setInterval(async () => {
-  try {
-    await checkEndpoints()
-  } catch (err) {
-    console.error('Error running endpoint checks:', err)
-  }
-}, 30_000)
 
 const start = async () => {
   try {
