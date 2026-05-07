@@ -38,10 +38,10 @@ export default function EndpointPage({ params }: PageProps) {
   if (!stats) return <div>No data found</div>
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="page-container space-y-6">
       <h1 className="text-xl font-bold">Endpoint Stats</h1>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Stat label="Uptime %" value={stats.uptimePercentage} />
         <Stat label="Avg Response" value={`${stats.averageResponseTime}ms`} />
         <Stat label="Total Checks" value={stats.totalChecks} />
@@ -50,15 +50,26 @@ export default function EndpointPage({ params }: PageProps) {
 
       <div className="border rounded p-4">
         <h2 className="font-semibold mb-2">Error Breakdown</h2>
-        <pre>{JSON.stringify(stats.errorBreakdown, null, 2)}</pre>
+        <div className="text-sm text-gray-600">
+          {Object.keys(stats.errorBreakdown || {}).length === 0 ? (
+            <span className="text-gray-400">No errors 🎉</span>
+          ) : (
+            Object.entries(stats.errorBreakdown).map(([key, value]) => (
+              <div key={key} className="flex justify-between py-1">
+                <span>{key}</span>
+                <span>{String(value)}</span>
+              </div>
+            ))
+          )}
+        </div>
       </div>
 
-      <div className="border rounded p-4 overflow-x-auto">
+      <div className="card overflow-hidden p-4">
         <h2 className="font-semibold mb-2">Recent Checks</h2>
 
-        <table className="w-full text-sm table-auto border-collapse">
-          <thead>
-            <tr className="text-left border-b">
+        {/* <table className="w-full text-sm">
+          <thead className="bg-gray-50 border-b">
+            <tr className="border-b last:border-b-0 hover:bg-gray-50">
               <th className="py-2 pr-4">Status</th>
               <th className="py-2 pr-4">Response</th>
               <th className="py-2 pr-4">Time</th>
@@ -78,6 +89,37 @@ export default function EndpointPage({ params }: PageProps) {
               </tr>
             ))}
           </tbody>
+        </table> */}
+        <table className="w-full text-sm table-fixed">
+          <thead className="bg-gray-50 border-b">
+            <tr>
+              <th className="text-left py-3 px-4 w-24">Status</th>
+              <th className="text-left py-3 px-4">Response</th>
+              <th className="text-left py-3 px-4">Time</th>
+              <th className="text-left py-3 px-4">Error</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {stats.recentChecks.map((c: any, i: number) => (
+              <tr
+                key={i}
+                className="border-b last:border-b-0 hover:bg-gray-50 transition-colors"
+              >
+                <td className="py-3 px-4">{c.isUp ? '🟢' : '🔴'}</td>
+
+                <td className="py-3 px-4 font-medium">{c.responseTime}ms</td>
+
+                <td className="py-3 px-4 whitespace-nowrap text-gray-600">
+                  {new Date(c.checkedAt).toLocaleTimeString()}
+                </td>
+
+                <td className="py-3 px-4 text-gray-600">
+                  {c.errorType ?? '-'}
+                </td>
+              </tr>
+            ))}
+          </tbody>
         </table>
       </div>
     </div>
@@ -86,9 +128,9 @@ export default function EndpointPage({ params }: PageProps) {
 
 function Stat({ label, value }: any) {
   return (
-    <div className="border rounded p-4">
+    <div className="card p-4">
       <div className="text-sm text-gray-500">{label}</div>
-      <div className="text-xl font-bold">{value}</div>
+      <div className="text-2xl font-semibold mt-1">{value}</div>
     </div>
   )
 }
