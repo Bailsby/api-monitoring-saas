@@ -4,10 +4,13 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "lint": "cd apps/api && eslint .",
-    "lint:fix": "cd apps/api && eslint . --fix",
-    "format": "cd apps/api && prettier . --write",
+    "lint": "npm run lint --prefix apps/api && npm run lint --prefix apps/web",
+    "lint:fix": "npm run lint:fix --prefix apps/api && npm run lint:fix --prefix apps/web",
+    "format": "prettier . --write",
     "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{ts,js,tsx,jsx,json,css,md}": "prettier --write"
   },
   "repository": {
     "type": "git",
@@ -22,6 +25,8 @@
   },
   "homepage": "https://github.com/Bailsby/api-monitoring-saas#readme",
   "devDependencies": {
-    "husky": "^9.1.7"
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.2",
+    "prettier": "^3.8.3"
   }
 }

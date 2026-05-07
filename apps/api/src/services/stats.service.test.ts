@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { calculateEndpointStats } from './stats.service.js'
 
 describe('calculateEndpointStats', () => {
-  it('should calculate uptime statistics correctly', () => {
+  it('should calculate uptime statistics correctly', (): void => {
     const checks = [
       {
         isUp: true,
@@ -36,7 +36,7 @@ describe('calculateEndpointStats', () => {
     })
   })
 
-  it('should return null when no checks exist', () => {
+  it('should return null when no checks exist', (): void => {
     const result = calculateEndpointStats([])
 
     expect(result).toBeNull()

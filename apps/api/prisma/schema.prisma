@@ -7,9 +7,9 @@ datasource db {
 }
 
 model MonitoredEndpoint {
-  id        String          @id @default(cuid())
-  url       String
-  createdAt DateTime        @default(now())
+  id        String   @id @default(cuid())
+  url       String   @unique
+  createdAt DateTime @default(now())
 
   checks    EndpointCheck[]
 }

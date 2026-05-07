@@ -1,8 +1,8 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
+import { PrismaClient, Prisma } from '@prisma/client'
 
 import { prismaMock } from './test/mocks/prisma.js'
 import { buildApp } from './app.js'
-import { PrismaClient } from '@prisma/client'
 import { mockUrl } from './test/constants.js'
 
 const createTestApp = () =>
@@ -15,7 +15,7 @@ beforeEach(() => {
 })
 
 describe('API routes', () => {
-  it('GET /health should return ok', async () => {
+  it('GET /health should return ok', async (): Promise<void> => {
     const app = createTestApp()
 
     const response = await app.inject({
@@ -29,7 +29,7 @@ describe('API routes', () => {
     })
   })
 
-  it('GET /endpoints should return endpoints', async () => {
+  it('GET /endpoints should return endpoints', async (): Promise<void> => {
     prismaMock.monitoredEndpoint.findMany.mockResolvedValue([
       {
         id: '123',
@@ -53,7 +53,7 @@ describe('API routes', () => {
     ])
   })
 
-  it('POST /endpoints should create endpoint', async () => {
+  it('POST /endpoints should create endpoint', async (): Promise<void> => {
     prismaMock.monitoredEndpoint.create.mockResolvedValue({
       id: '123',
       url: mockUrl,
@@ -76,7 +76,32 @@ describe('API routes', () => {
     })
   })
 
-  it('GET /checks should return checks', async () => {
+  it('POST /endpoints should return 409 when endpoint already exists', async (): Promise<void> => {
+    prismaMock.monitoredEndpoint.create.mockRejectedValue(
+      new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
+        code: 'P2002',
+        clientVersion: '6.0.0',
+      }),
+    )
+
+    const app = createTestApp()
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/endpoints',
+      payload: {
+        url: mockUrl,
+      },
+    })
+
+    expect(response.statusCode).toBe(409)
+
+    expect(response.json()).toEqual({
+      message: 'Endpoint already exists',
+    })
+  })
+
+  it('GET /checks should return checks', async (): Promise<void> => {
     prismaMock.endpointCheck.findMany.mockResolvedValue([
       {
         id: 'check-1',
@@ -99,7 +124,7 @@ describe('API routes', () => {
     expect(response.json()).toHaveLength(1)
   })
 
-  it('GET /endpoints/:id/stats should return stats', async () => {
+  it('GET /endpoints/:id/stats should return stats', async (): Promise<void> => {
     prismaMock.endpointCheck.findMany.mockResolvedValue([
       {
         isUp: true,
@@ -129,7 +154,7 @@ describe('API routes', () => {
     })
   })
 
-  it('GET /endpoints/:id/stats should return 404 when no checks exist', async () => {
+  it('GET /endpoints/:id/stats should return 404 when no checks exist', async (): Promise<void> => {
     prismaMock.endpointCheck.findMany.mockResolvedValue([])
 
     const app = createTestApp()

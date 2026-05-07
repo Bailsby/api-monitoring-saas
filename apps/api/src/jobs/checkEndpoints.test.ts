@@ -16,7 +16,7 @@ beforeEach(() => {
 })
 
 describe('checkEndpoints', () => {
-  it('should store successful endpoint check', async () => {
+  it('should store successful endpoint check', async (): Promise<void> => {
     prismaMock.monitoredEndpoint.findMany.mockResolvedValue([
       {
         id: 'endpoint-1',
@@ -51,7 +51,7 @@ describe('checkEndpoints', () => {
     })
   })
 
-  it('should classify http errors correctly', async () => {
+  it('should classify http errors correctly', async (): Promise<void> => {
     prismaMock.monitoredEndpoint.findMany.mockResolvedValue([
       {
         id: 'endpoint-1',
@@ -77,7 +77,7 @@ describe('checkEndpoints', () => {
     })
   })
 
-  it('should classify dns errors correctly', async () => {
+  it('should classify dns errors correctly', async (): Promise<void> => {
     prismaMock.monitoredEndpoint.findMany.mockResolvedValue([
       {
         id: 'endpoint-1',
@@ -99,7 +99,7 @@ describe('checkEndpoints', () => {
     })
   })
 
-  it('should classify timeout errors correctly', async () => {
+  it('should classify timeout errors correctly', async (): Promise<void> => {
     prismaMock.monitoredEndpoint.findMany.mockResolvedValue([
       {
         id: 'endpoint-1',
@@ -124,7 +124,7 @@ describe('checkEndpoints', () => {
     })
   })
 
-  it('should classify ssl errors correctly', async () => {
+  it('should classify ssl errors correctly', async (): Promise<void> => {
     prismaMock.monitoredEndpoint.findMany.mockResolvedValue([
       {
         id: 'endpoint-1',

@@ -1,12 +1,10 @@
-import js from '@eslint/js'
 import globals from 'globals'
+import js from '@eslint/js'
 import tseslint from 'typescript-eslint'
-import prettier from 'eslint-plugin-prettier'
 import { defineConfig } from 'eslint/config'
 
 export default defineConfig([
   js.configs.recommended,
-
   ...tseslint.configs.recommended,
 
   {
@@ -14,11 +12,7 @@ export default defineConfig([
     languageOptions: {
       globals: globals.node,
     },
-    plugins: {
-      prettier,
-    },
     rules: {
-      'prettier/prettier': 'error',
       semi: ['error', 'never'],
     },
   },

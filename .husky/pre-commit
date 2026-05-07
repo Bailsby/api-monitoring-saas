@@ -1,10 +1,19 @@
 #!/bin/sh
 . "$(dirname "$0")/_/husky.sh"
 
-cd apps/api
-
 echo "🔥 Running lint-staged..."
 npx lint-staged
 
-echo "🧪 Running tests..."
-npm run test
+echo "🔥 Running lint..."
+npm run lint
+
+echo "🔥 Checking for API changes..."
+
+if git diff --cached --name-only | grep '^apps/api/' > /dev/null; then
+  echo "🧪 API changes detected — running tests..."
+  npm run test --prefix apps/api
+else
+  echo "✅ No API changes — skipping tests"
+fi
+
+echo "🎉 Pre-commit complete"
