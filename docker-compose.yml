@@ -2,6 +2,7 @@ services:
   api:
     build:
       context: ./apps/api
+    command: npm run dev
     ports:
       - '3000:3000'
     volumes:
@@ -11,6 +12,32 @@ services:
       DATABASE_URL: postgresql://postgres:postgres@db:5432/monitoring
     depends_on:
       - db
+
+  worker:
+    build:
+      context: ./apps/api
+    command: npm run dev:worker
+    volumes:
+      - ./apps/api:/app
+      - /app/node_modules
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/monitoring
+    depends_on:
+      - db
+
+  web:
+    build:
+      context: ./apps/web
+    command: npm run dev
+    ports:
+      - '3001:3000'
+    volumes:
+      - ./apps/web:/app
+      - /app/node_modules
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:3000
+    depends_on:
+      - api
 
   db:
     image: postgres:16
