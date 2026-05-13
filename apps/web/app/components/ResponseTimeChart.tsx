@@ -54,45 +54,51 @@ export default function ResponseTimeChart({ data }: Props) {
         </span>
       </div>
 
-      <div className="h-64 w-full">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart
-            data={formatted}
-            margin={{ top: 4, right: 4, bottom: 0, left: -10 }}
-          >
-            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-            <XAxis
-              dataKey="time"
-              tick={{ fontSize: 11, fill: '#94a3b8' }}
-              axisLine={false}
-              tickLine={false}
-            />
-            <YAxis
-              tick={{ fontSize: 11, fill: '#94a3b8' }}
-              axisLine={false}
-              tickLine={false}
-              unit="ms"
-            />
-            <Tooltip content={<CustomTooltip />} />
-            {avg > 0 && (
-              <ReferenceLine
-                y={avg}
-                stroke="#3b82f6"
-                strokeDasharray="4 4"
-                strokeOpacity={0.5}
+      {formatted.length === 0 ? (
+        <div className="h-64 flex items-center justify-center text-sm text-slate-400">
+          No data yet — checks will appear here once the worker runs.
+        </div>
+      ) : (
+        <div className="h-64 w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart
+              data={formatted}
+              margin={{ top: 4, right: 4, bottom: 0, left: -10 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+              <XAxis
+                dataKey="time"
+                tick={{ fontSize: 11, fill: '#94a3b8' }}
+                axisLine={false}
+                tickLine={false}
               />
-            )}
-            <Line
-              type="monotone"
-              dataKey="responseTime"
-              stroke="#3b82f6"
-              strokeWidth={2}
-              dot={false}
-              activeDot={{ r: 4, fill: '#3b82f6', strokeWidth: 0 }}
-            />
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
+              <YAxis
+                tick={{ fontSize: 11, fill: '#94a3b8' }}
+                axisLine={false}
+                tickLine={false}
+                unit="ms"
+              />
+              <Tooltip content={<CustomTooltip />} />
+              {avg > 0 && (
+                <ReferenceLine
+                  y={avg}
+                  stroke="#3b82f6"
+                  strokeDasharray="4 4"
+                  strokeOpacity={0.5}
+                />
+              )}
+              <Line
+                type="monotone"
+                dataKey="responseTime"
+                stroke="#3b82f6"
+                strokeWidth={2}
+                dot={false}
+                activeDot={{ r: 4, fill: '#3b82f6', strokeWidth: 0 }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      )}
     </div>
   )
 }

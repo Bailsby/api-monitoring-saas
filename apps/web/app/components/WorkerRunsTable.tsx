@@ -39,6 +39,17 @@ export default function WorkerRunsTable({ checks }: Props) {
           </thead>
 
           <tbody className="divide-y divide-slate-50">
+            {checks.length === 0 && (
+              <tr>
+                <td
+                  colSpan={4}
+                  className="px-5 py-10 text-center text-sm text-slate-400"
+                >
+                  No checks recorded yet — the worker will populate this once it
+                  runs.
+                </td>
+              </tr>
+            )}
             {checks.map((check, i) => (
               <tr key={i} className="hover:bg-slate-50 transition-colors">
                 <td className="px-5 py-3">
