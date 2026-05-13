@@ -1,74 +1,41 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import Link from 'next/link'
-import { api } from '../lib/api'
-
-type Endpoint = {
-  id: string
-  url: string
-}
-
-function EndpointCard({ ep }: { ep: Endpoint }) {
-  return (
-    <Link
-      href={`/endpoints/${ep.id}`}
-      className="group relative flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-200 hover:border-slate-300 hover:shadow-md"
-    >
-      {/* Status badge */}
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium text-slate-800">
-            {ep.url}
-          </p>
-          <p className="mt-0.5 text-xs text-slate-400">Monitored endpoint</p>
-        </div>
-        <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700 ring-1 ring-emerald-200">
-          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-          Live
-        </span>
-      </div>
-
-      {/* Divider */}
-      <div className="h-px bg-slate-100" />
-
-      {/* Footer */}
-      <div className="flex items-center justify-between">
-        <span className="text-xs text-slate-400 group-hover:text-slate-600 transition-colors">
-          View stats →
-        </span>
-        <div className="flex gap-1">
-          {[...Array(8)].map((_, i) => (
-            <div
-              key={i}
-              className="h-4 w-1 rounded-full bg-emerald-400"
-              style={{ opacity: 0.3 + (i / 8) * 0.7 }}
-            />
-          ))}
-        </div>
-      </div>
-    </Link>
-  )
-}
+import { api, EndpointSummary } from '../lib/api'
+import EndpointsTable from './components/EndpointsTable'
+import AddEndpointModal from './components/AddEndpointModal'
 
 export default function Dashboard() {
-  const [endpoints, setEndpoints] = useState<Endpoint[]>([])
+  const [endpoints, setEndpoints] = useState<EndpointSummary[]>([])
   const [loading, setLoading] = useState(true)
+  const [showModal, setShowModal] = useState(false)
+  const [refreshKey, setRefreshKey] = useState(0)
 
   useEffect(() => {
-    const load = async () => {
+    let cancelled = false
+
+    async function fetchEndpoints() {
+      setLoading(true)
       try {
-        setLoading(true)
-        const data = await api.getEndpoints()
-        setEndpoints(data)
+        const data = await api.getEndpointsSummary()
+        if (!cancelled) setEndpoints(data)
       } catch (err) {
         console.error('Failed to load endpoints:', err)
       } finally {
-        setLoading(false)
+        if (!cancelled) setLoading(false)
       }
     }
-    load()
-  }, [])
+
+    fetchEndpoints()
+    return () => {
+      cancelled = true
+    }
+  }, [refreshKey])
+
+  const handleSuccess = () => {
+    setShowModal(false)
+    setRefreshKey((k) => k + 1)
+  }
 
   if (loading) {
     return (
@@ -82,9 +49,16 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
+      {showModal && (
+        <AddEndpointModal
+          onClose={() => setShowModal(false)}
+          onSuccess={handleSuccess}
+        />
+      )}
+
       {/* Header */}
-      <div className="flex items-end justify-between">
+      <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
             Endpoints
@@ -93,16 +67,24 @@ export default function Dashboard() {
             Real-time uptime and performance monitoring
           </p>
         </div>
-        <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-sm">
-          <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="text-xs font-medium text-slate-600">
-            {endpoints.length} endpoint{endpoints.length !== 1 ? 's' : ''}
-          </span>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-sm">
+            <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-xs font-medium text-slate-600">
+              {endpoints.length} endpoint{endpoints.length !== 1 ? 's' : ''}
+            </span>
+          </div>
+          <button
+            onClick={() => setShowModal(true)}
+            className="cursor-pointer rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 transition-colors shadow-sm"
+          >
+            + Add Endpoint
+          </button>
         </div>
       </div>
 
       {/* Empty state */}
-      {endpoints.length === 0 && (
+      {endpoints.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white py-20 text-center">
           <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-slate-100">
             <svg
@@ -127,14 +109,9 @@ export default function Dashboard() {
             performance.
           </p>
         </div>
+      ) : (
+        <EndpointsTable endpoints={endpoints} />
       )}
-
-      {/* Grid */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {endpoints.map((ep) => (
-          <EndpointCard key={ep.id} ep={ep} />
-        ))}
-      </div>
     </div>
   )
 }

@@ -124,6 +124,87 @@ describe('API routes', () => {
     expect(response.json()).toHaveLength(1)
   })
 
+  it('GET /endpoints/summary should return aggregated stats per endpoint', async (): Promise<void> => {
+    const now = new Date()
+    prismaMock.monitoredEndpoint.findMany.mockResolvedValue([
+      {
+        id: '123',
+        url: mockUrl,
+        createdAt: now,
+        checks: [
+          { isUp: true, responseTime: 100, checkedAt: now },
+          {
+            isUp: false,
+            responseTime: 300,
+            checkedAt: new Date(now.getTime() - 60_000),
+          },
+        ],
+      },
+    ])
+
+    const app = createTestApp()
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/endpoints/summary',
+    })
+
+    expect(response.statusCode).toBe(200)
+    expect(response.json()).toHaveLength(1)
+    expect(response.json()[0]).toMatchObject({
+      id: '123',
+      url: mockUrl,
+      isUp: true,
+      uptimePercentage: 50,
+      averageResponseTime: 200,
+      totalChecks: 2,
+    })
+  })
+
+  it('GET /endpoints/summary should return nulls for endpoints with no checks', async (): Promise<void> => {
+    prismaMock.monitoredEndpoint.findMany.mockResolvedValue([
+      {
+        id: '123',
+        url: mockUrl,
+        createdAt: new Date(),
+        checks: [],
+      },
+    ])
+
+    const app = createTestApp()
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/endpoints/summary',
+    })
+
+    expect(response.statusCode).toBe(200)
+    expect(response.json()[0]).toMatchObject({
+      id: '123',
+      url: mockUrl,
+      isUp: null,
+      uptimePercentage: null,
+      averageResponseTime: null,
+      totalChecks: 0,
+    })
+  })
+
+  it('GET /endpoints/:id/stats should return 404 when endpoint does not exist', async (): Promise<void> => {
+    prismaMock.monitoredEndpoint.findUnique.mockResolvedValue(null)
+
+    const app = createTestApp()
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/endpoints/nonexistent/stats',
+    })
+
+    expect(response.statusCode).toBe(404)
+    expect(response.json()).toEqual({
+      message: 'Endpoint not found',
+    })
+  })
+
   it('GET /endpoints/:id/stats should return stats', async (): Promise<void> => {
     prismaMock.monitoredEndpoint.findUnique.mockResolvedValue({
       id: '123',

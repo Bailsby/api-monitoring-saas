@@ -44,6 +44,37 @@ export const endpointRoutes = async (
     }
   })
 
+  app.get('/endpoints/summary', async () => {
+    const endpoints = await deps.prisma.monitoredEndpoint.findMany({
+      include: {
+        checks: {
+          where: {
+            checkedAt: {
+              gte: new Date(Date.now() - 24 * 60 * 60 * 1000),
+            },
+          },
+          orderBy: { checkedAt: 'desc' },
+          select: { isUp: true, responseTime: true, checkedAt: true },
+        },
+      },
+    })
+
+    return endpoints.map((endpoint) => {
+      const stats = calculateEndpointStats(endpoint.checks)
+
+      return {
+        id: endpoint.id,
+        url: endpoint.url,
+        createdAt: endpoint.createdAt,
+        isUp: endpoint.checks[0]?.isUp ?? null,
+        uptimePercentage: stats?.uptimePercentage ?? null,
+        averageResponseTime: stats?.averageResponseTime ?? null,
+        totalChecks: stats?.totalChecks ?? 0,
+        lastCheckedAt: stats?.lastCheckedAt ?? null,
+      }
+    })
+  })
+
   app.get<{
     Params: {
       id: string
