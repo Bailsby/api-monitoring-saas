@@ -49,14 +49,26 @@ export const endpointRoutes = async (
       id: string
     }
   }>('/endpoints/:id/stats', async (request, reply) => {
+    const endpoint = await deps.prisma.monitoredEndpoint.findUnique({
+      where: { id: request.params.id },
+    })
+
+    if (!endpoint) {
+      return reply.status(404).send({
+        message: 'Endpoint not found',
+      })
+    }
+
     const checks = await deps.prisma.endpointCheck.findMany({
       where: {
         endpointId: request.params.id,
+        checkedAt: {
+          gte: new Date(Date.now() - 24 * 60 * 60 * 1000),
+        },
       },
       orderBy: {
         checkedAt: 'desc',
       },
-      take: 50,
       select: {
         isUp: true,
         responseTime: true,
@@ -64,8 +76,6 @@ export const endpointRoutes = async (
         errorType: true,
       },
     })
-
-    console.log('Fetched checks:', checks.length)
 
     const stats = calculateEndpointStats(checks)
 
@@ -75,6 +85,9 @@ export const endpointRoutes = async (
       })
     }
 
-    return stats
+    return {
+      ...stats,
+      url: endpoint.url,
+    }
   })
 }

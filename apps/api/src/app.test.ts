@@ -125,6 +125,11 @@ describe('API routes', () => {
   })
 
   it('GET /endpoints/:id/stats should return stats', async (): Promise<void> => {
+    prismaMock.monitoredEndpoint.findUnique.mockResolvedValue({
+      id: '123',
+      url: mockUrl,
+    })
+
     prismaMock.endpointCheck.findMany.mockResolvedValue([
       {
         isUp: true,
@@ -151,10 +156,16 @@ describe('API routes', () => {
       averageResponseTime: 200,
       totalChecks: 2,
       totalFailures: 1,
+      url: mockUrl,
     })
   })
 
   it('GET /endpoints/:id/stats should return 404 when no checks exist', async (): Promise<void> => {
+    prismaMock.monitoredEndpoint.findUnique.mockResolvedValue({
+      id: '123',
+      url: mockUrl,
+    })
+
     prismaMock.endpointCheck.findMany.mockResolvedValue([])
 
     const app = createTestApp()

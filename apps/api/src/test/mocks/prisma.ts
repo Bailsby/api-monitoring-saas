@@ -14,6 +14,11 @@ export const prismaMock = {
       id: '123',
       url: mockUrl,
     }),
+
+    findUnique: vi.fn().mockResolvedValue({
+      id: '123',
+      url: mockUrl,
+    }),
   },
 
   endpointCheck: {

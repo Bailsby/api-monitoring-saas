@@ -1,3 +1,5 @@
+import { EndpointStats } from '@/types/stats'
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL
 
 console.log('API_URL:', API_URL)
@@ -35,7 +37,7 @@ export const api = {
     return res.json()
   },
 
-  async getEndpointStats(id: string) {
+  async getEndpointStats(id: string): Promise<EndpointStats> {
     const res = await fetch(`${API_URL}/endpoints/${id}/stats`)
 
     if (!res.ok) {
