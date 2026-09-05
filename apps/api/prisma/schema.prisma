@@ -11,7 +11,12 @@ model MonitoredEndpoint {
   url       String   @unique
   createdAt DateTime @default(now())
 
+  /// Consecutive failed checks before an incident opens. Configurable per
+  /// endpoint so a flaky endpoint can be made less noisy without affecting others.
+  failureThreshold Int @default(2)
+
   checks    EndpointCheck[]
+  incidents Incident[]
 }
 
 model EndpointCheck {
@@ -25,6 +30,24 @@ model EndpointCheck {
 
   endpointId String
   endpoint   MonitoredEndpoint @relation(fields: [endpointId], references: [id], onDelete: Cascade)
+
+  @@index([endpointId, checkedAt])
+}
+
+model Incident {
+  id         String    @id @default(cuid())
+  startedAt  DateTime
+  resolvedAt DateTime?
+  /// Error type of the check that opened the incident, e.g. "http_error".
+  cause      String
+  /// Populated on resolution; null while the incident is ongoing.
+  durationMs Int?
+
+  endpointId String
+  endpoint   MonitoredEndpoint @relation(fields: [endpointId], references: [id], onDelete: Cascade)
+
+  @@index([endpointId, startedAt])
+  @@index([resolvedAt])
 }
 
 model WorkerRun {

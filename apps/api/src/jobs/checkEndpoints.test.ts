@@ -48,6 +48,8 @@ describe('checkEndpoints', () => {
       total: 1,
       successful: 1,
       failures: 0,
+      incidentsOpened: 0,
+      incidentsResolved: 0,
     })
   })
 

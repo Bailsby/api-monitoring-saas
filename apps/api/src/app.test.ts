@@ -139,6 +139,7 @@ describe('API routes', () => {
             checkedAt: new Date(now.getTime() - 60_000),
           },
         ],
+        incidents: [],
       },
     ])
 
@@ -168,6 +169,7 @@ describe('API routes', () => {
         url: mockUrl,
         createdAt: new Date(),
         checks: [],
+        incidents: [],
       },
     ])
 

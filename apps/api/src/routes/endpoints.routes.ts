@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify'
 import { PrismaClient, Prisma } from '@prisma/client'
 
 import { calculateEndpointStats } from '../services/stats.service.js'
+import { parseWindow, windowStart } from '../lib/window.js'
 
 const PRISMA_ERRORS = {
   UNIQUE_CONSTRAINT: 'P2002',
@@ -20,12 +21,16 @@ export const endpointRoutes = async (
   app.post<{
     Body: {
       url: string
+      failureThreshold?: number
     }
   }>('/endpoints', async (request, reply) => {
     try {
       const endpoint = await deps.prisma.monitoredEndpoint.create({
         data: {
           url: request.body.url,
+          ...(request.body.failureThreshold !== undefined && {
+            failureThreshold: request.body.failureThreshold,
+          }),
         },
       })
 
@@ -44,23 +49,33 @@ export const endpointRoutes = async (
     }
   })
 
-  app.get('/endpoints/summary', async () => {
+  app.get<{
+    Querystring: { window?: string }
+  }>('/endpoints/summary', async (request) => {
+    const window = parseWindow(request.query.window)
+    const since = windowStart(window)
+
     const endpoints = await deps.prisma.monitoredEndpoint.findMany({
       include: {
         checks: {
           where: {
-            checkedAt: {
-              gte: new Date(Date.now() - 24 * 60 * 60 * 1000),
-            },
+            checkedAt: { gte: since },
           },
           orderBy: { checkedAt: 'desc' },
           select: { isUp: true, responseTime: true, checkedAt: true },
+        },
+        incidents: {
+          where: { resolvedAt: null },
+          select: { id: true, startedAt: true, cause: true },
+          orderBy: { startedAt: 'desc' },
+          take: 1,
         },
       },
     })
 
     return endpoints.map((endpoint) => {
       const stats = calculateEndpointStats(endpoint.checks)
+      const openIncident = endpoint.incidents[0] ?? null
 
       return {
         id: endpoint.id,
@@ -71,6 +86,8 @@ export const endpointRoutes = async (
         averageResponseTime: stats?.averageResponseTime ?? null,
         totalChecks: stats?.totalChecks ?? 0,
         lastCheckedAt: stats?.lastCheckedAt ?? null,
+        window,
+        openIncident,
       }
     })
   })
@@ -79,6 +96,7 @@ export const endpointRoutes = async (
     Params: {
       id: string
     }
+    Querystring: { window?: string }
   }>('/endpoints/:id/stats', async (request, reply) => {
     const endpoint = await deps.prisma.monitoredEndpoint.findUnique({
       where: { id: request.params.id },
@@ -90,23 +108,34 @@ export const endpointRoutes = async (
       })
     }
 
-    const checks = await deps.prisma.endpointCheck.findMany({
-      where: {
-        endpointId: request.params.id,
-        checkedAt: {
-          gte: new Date(Date.now() - 24 * 60 * 60 * 1000),
+    const window = parseWindow(request.query.window)
+    const since = windowStart(window)
+
+    const [checks, incidents] = await Promise.all([
+      deps.prisma.endpointCheck.findMany({
+        where: {
+          endpointId: request.params.id,
+          checkedAt: { gte: since },
         },
-      },
-      orderBy: {
-        checkedAt: 'desc',
-      },
-      select: {
-        isUp: true,
-        responseTime: true,
-        checkedAt: true,
-        errorType: true,
-      },
-    })
+        orderBy: {
+          checkedAt: 'desc',
+        },
+        select: {
+          isUp: true,
+          responseTime: true,
+          checkedAt: true,
+          errorType: true,
+        },
+      }),
+      // Incidents that overlap the window, including ones that began before it.
+      deps.prisma.incident.findMany({
+        where: {
+          endpointId: request.params.id,
+          OR: [{ resolvedAt: null }, { resolvedAt: { gte: since } }],
+        },
+        orderBy: { startedAt: 'desc' },
+      }),
+    ])
 
     const stats = calculateEndpointStats(checks)
 
@@ -119,6 +148,11 @@ export const endpointRoutes = async (
     return {
       ...stats,
       url: endpoint.url,
+      window,
+      incidents: incidents.map((incident) => ({
+        ...incident,
+        isOngoing: incident.resolvedAt === null,
+      })),
     }
   })
 }

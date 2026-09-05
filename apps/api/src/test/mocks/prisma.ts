@@ -7,6 +7,7 @@ export const prismaMock = {
       {
         id: '123',
         url: mockUrl,
+        failureThreshold: 2,
       },
     ]),
 
@@ -22,8 +23,15 @@ export const prismaMock = {
   },
 
   endpointCheck: {
-    findMany: vi.fn(),
+    findMany: vi.fn().mockResolvedValue([]),
     create: vi.fn(),
+  },
+
+  incident: {
+    findFirst: vi.fn().mockResolvedValue(null),
+    findMany: vi.fn().mockResolvedValue([]),
+    create: vi.fn(),
+    update: vi.fn(),
   },
 
   workerRun: {
