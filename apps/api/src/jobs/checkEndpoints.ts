@@ -6,6 +6,8 @@ import {
   shouldSendAlert,
 } from '../services/alerts.service.js'
 import { alertConfig, createEmailTransport } from '../lib/email.js'
+import { checkMonitorUrl } from '../services/url-safety.service.js'
+import { resolvesToPrivateAddress } from '../lib/dns-guard.js'
 
 type CheckResult = {
   statusCode: number
@@ -18,6 +20,7 @@ type CheckResult = {
     | 'ssl_error'
     | 'network_error'
     | 'http_error'
+    | 'blocked'
 }
 
 type WorkerMetrics = {
@@ -247,39 +250,57 @@ export const checkEndpoints = async (): Promise<WorkerMetrics> => {
       batch.map(async (endpoint) => {
         let result: CheckResult
 
-        try {
-          const { response, responseTime } = await fetchWithRetry(endpoint.url)
+        // Re-checked here, not just at creation: a hostname's address can
+        // change after the endpoint was stored.
+        const safety = checkMonitorUrl(endpoint.url)
 
-          const statusCode = response.status
-          const isUp = statusCode >= 200 && statusCode < 400
+        const blocked =
+          !safety.ok || (await resolvesToPrivateAddress(safety.url.hostname))
 
-          result = {
-            statusCode,
-            isUp,
-            responseTime,
-            errorType: isUp ? 'ok' : 'http_error',
-          }
-        } catch (err: unknown) {
-          let errorType: CheckResult['errorType'] = 'network_error'
-
-          if (err instanceof Error) {
-            if (err.name === 'AbortError') {
-              errorType = 'timeout'
-            } else if (err.message.includes('ENOTFOUND')) {
-              errorType = 'dns_error'
-            } else if (
-              err.message.includes('CERT_') ||
-              err.message.includes('SSL')
-            ) {
-              errorType = 'ssl_error'
-            }
-          }
-
+        if (blocked) {
           result = {
             statusCode: 0,
             isUp: false,
             responseTime: 0,
-            errorType,
+            errorType: 'blocked',
+          }
+        } else {
+          try {
+            const { response, responseTime } = await fetchWithRetry(
+              endpoint.url,
+            )
+
+            const statusCode = response.status
+            const isUp = statusCode >= 200 && statusCode < 400
+
+            result = {
+              statusCode,
+              isUp,
+              responseTime,
+              errorType: isUp ? 'ok' : 'http_error',
+            }
+          } catch (err: unknown) {
+            let errorType: CheckResult['errorType'] = 'network_error'
+
+            if (err instanceof Error) {
+              if (err.name === 'AbortError') {
+                errorType = 'timeout'
+              } else if (err.message.includes('ENOTFOUND')) {
+                errorType = 'dns_error'
+              } else if (
+                err.message.includes('CERT_') ||
+                err.message.includes('SSL')
+              ) {
+                errorType = 'ssl_error'
+              }
+            }
+
+            result = {
+              statusCode: 0,
+              isUp: false,
+              responseTime: 0,
+              errorType,
+            }
           }
         }
 

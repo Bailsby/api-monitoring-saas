@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState, SyntheticEvent } from 'react'
-import { api, ApiError } from '@/lib/api'
+import { adminToken, api, ApiError } from '@/lib/api'
 
 type Props = {
   onClose: () => void
@@ -10,6 +10,10 @@ type Props = {
 
 export default function AddEndpointModal({ onClose, onSuccess }: Props) {
   const [url, setUrl] = useState('')
+  // Lazy initialiser rather than an effect: this modal only mounts after a
+  // click, so it never renders on the server and localStorage is always there.
+  const [token, setToken] = useState(() => adminToken.get())
+  const [readOnly, setReadOnly] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -35,13 +39,25 @@ export default function AddEndpointModal({ onClose, onSuccess }: Props) {
     try {
       setLoading(true)
       setError(null)
-      await api.createEndpoint(trimmed)
+      setReadOnly(false)
+
+      await api.createEndpoint(trimmed, token.trim())
+      adminToken.set(token.trim())
       onSuccess()
     } catch (err: unknown) {
-      if (err instanceof ApiError && err.status === 409) {
-        setError('This endpoint is already being monitored.')
-      } else {
+      if (!(err instanceof ApiError)) {
         setError('Something went wrong. Please try again.')
+        return
+      }
+
+      if (err.status === 409) {
+        setError('This endpoint is already being monitored.')
+      } else if (err.status === 401 || err.status === 503) {
+        // Expected for anyone browsing the public demo.
+        setReadOnly(true)
+      } else {
+        // 400s explain themselves — rejected URLs say why.
+        setError(err.message)
       }
     } finally {
       setLoading(false)
@@ -98,6 +114,39 @@ export default function AddEndpointModal({ onClose, onSuccess }: Props) {
             />
             {error && <p className="mt-1.5 text-xs text-red-600">{error}</p>}
           </div>
+
+          <div>
+            <label className="mb-1.5 block text-xs font-medium text-slate-700">
+              Admin token
+              <span className="ml-1 font-normal text-slate-400">
+                — required to make changes
+              </span>
+            </label>
+            <input
+              type="password"
+              value={token}
+              onChange={(e) => {
+                setToken(e.target.value)
+                setReadOnly(false)
+                setError(null)
+              }}
+              placeholder="Leave blank if you are just looking around"
+              autoComplete="off"
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder-slate-400 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
+            />
+          </div>
+
+          {readOnly && (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5">
+              <p className="text-xs font-medium text-amber-900">
+                This is a public demo, so it is read-only.
+              </p>
+              <p className="mt-1 text-xs text-amber-800">
+                Adding endpoints needs an admin token. Everything else — uptime,
+                response times, incidents and status pages — is fully live.
+              </p>
+            </div>
+          )}
 
           <div className="flex justify-end gap-2 pt-1">
             <button

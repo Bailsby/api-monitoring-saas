@@ -5,6 +5,11 @@ import { prismaMock } from './test/mocks/prisma.js'
 import { buildApp } from './app.js'
 import { mockUrl } from './test/constants.js'
 
+const ADMIN_TOKEN = 'test-admin-token'
+
+// Write routes are gated; reads are deliberately open.
+const adminHeaders = { 'x-admin-token': ADMIN_TOKEN }
+
 const createTestApp = () =>
   buildApp({
     prisma: prismaMock as unknown as PrismaClient,
@@ -12,6 +17,7 @@ const createTestApp = () =>
 
 beforeEach(() => {
   vi.clearAllMocks()
+  process.env.ADMIN_TOKEN = ADMIN_TOKEN
 })
 
 describe('API routes', () => {
@@ -64,6 +70,7 @@ describe('API routes', () => {
     const response = await app.inject({
       method: 'POST',
       url: '/endpoints',
+      headers: adminHeaders,
       payload: {
         url: mockUrl,
       },
@@ -89,6 +96,7 @@ describe('API routes', () => {
     const response = await app.inject({
       method: 'POST',
       url: '/endpoints',
+      headers: adminHeaders,
       payload: {
         url: mockUrl,
       },

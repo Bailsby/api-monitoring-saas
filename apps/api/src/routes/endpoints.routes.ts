@@ -4,6 +4,8 @@ import { PrismaClient, Prisma } from '@prisma/client'
 import { calculateEndpointStats } from '../services/stats.service.js'
 import { parseWindow, windowStart } from '../lib/window.js'
 import { slugify } from '../services/status.service.js'
+import { checkMonitorUrl } from '../services/url-safety.service.js'
+import { requireAdmin } from '../lib/auth.js'
 
 const PRISMA_ERRORS = {
   UNIQUE_CONSTRAINT: 'P2002',
@@ -25,11 +27,17 @@ export const endpointRoutes = async (
       url: string
       failureThreshold?: number
     }
-  }>('/endpoints', async (request, reply) => {
+  }>('/endpoints', { preHandler: requireAdmin }, async (request, reply) => {
+    const check = checkMonitorUrl(request.body.url ?? '')
+
+    if (!check.ok) {
+      return reply.status(400).send({ message: check.message })
+    }
+
     try {
       const endpoint = await deps.prisma.monitoredEndpoint.create({
         data: {
-          url: request.body.url,
+          url: check.url.toString(),
           ...(request.body.failureThreshold !== undefined && {
             failureThreshold: request.body.failureThreshold,
           }),
@@ -61,7 +69,7 @@ export const endpointRoutes = async (
       slug?: string | null
       isPublic?: boolean
     }
-  }>('/endpoints/:id', async (request, reply) => {
+  }>('/endpoints/:id', { preHandler: requireAdmin }, async (request, reply) => {
     const {
       failureThreshold,
       alertsEnabled,

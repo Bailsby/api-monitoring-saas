@@ -53,6 +53,18 @@ is fine for a demonstration. A production monitoring service you were paying for
 would run checks from several regions on a guaranteed schedule, and this does
 not pretend to.
 
+## A note on the demo being public
+
+Anyone can read this demo — that is the point of a status page, and there is
+no login in front of it. Anyone cannot _change_ it: adding or editing a
+monitored endpoint requires an admin token, and with no token configured an
+instance is read-only rather than open.
+
+Monitored URLs are also checked before every request, and private, loopback
+and link-local addresses are refused, so the worker cannot be pointed at
+things that are reachable from the machine running it but not from the
+internet.
+
 ## Running it locally
 
 You need Docker.

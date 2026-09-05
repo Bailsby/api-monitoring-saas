@@ -32,6 +32,11 @@ services:
       - key: CORS_ORIGINS
         sync: false
 
+      # Gates writes. Render generates and stores this; read it from the
+      # dashboard when you need to add an endpoint.
+      - key: ADMIN_TOKEN
+        generateValue: true
+
       # Alerting. Leave unset to run without it.
       - key: RESEND_API_KEY
         sync: false

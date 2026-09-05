@@ -10,6 +10,7 @@ services:
       - /app/node_modules
     environment:
       DATABASE_URL: postgresql://postgres:postgres@db:5432/monitoring
+      ADMIN_TOKEN: local-dev-token
     depends_on:
       - db
 
