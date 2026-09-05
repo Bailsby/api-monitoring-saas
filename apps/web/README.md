@@ -1,36 +1,58 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Dashboard and status pages
 
-## Getting Started
+The Next.js front end for API Monitor. See the [project README](../../README.md)
+for what the product does and how to deploy it.
 
-First, run the development server:
+Two distinct surfaces live here, and the difference between them shapes the
+code:
+
+| Route                       | Audience                           | Rendering                              |
+| --------------------------- | ---------------------------------- | -------------------------------------- |
+| `/`, `/endpoints/[id]`      | Whoever operates the monitoring    | Client-side, fetched from the browser  |
+| `/status`, `/status/[slug]` | Customers of the monitored service | Server-rendered, fetched on the server |
+
+Dashboard pages sit in the `(dashboard)` route group so they can share the
+navigation chrome without imposing it on the status pages, which deliberately
+render bare. Status pages are server-rendered so they are shareable and carry
+real page metadata.
+
+## Running it
+
+Normally you want the whole stack, from the repository root:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+docker compose up
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- Dashboard — http://localhost:3001
+- Status pages — http://localhost:3001/status
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+To run just this app against an API that is already up:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm install
+npm run dev
+```
 
-## Learn More
+## Environment
 
-To learn more about Next.js, take a look at the following resources:
+| Variable              | Used by     | Notes                                                      |
+| --------------------- | ----------- | ---------------------------------------------------------- |
+| `NEXT_PUBLIC_API_URL` | The browser | Dashboard fetches                                          |
+| `API_INTERNAL_URL`    | The server  | Status page rendering; falls back to `NEXT_PUBLIC_API_URL` |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Both point at the same place in production. They differ only under Docker,
+where `localhost` from inside the web container is not the API container — hence
+the split.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Checks
 
-## Deploy on Vercel
+```bash
+npm run lint
+npm run build
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Both run in CI on every push.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+> Next.js in this repo may differ from what you have seen elsewhere — see
+> `AGENTS.md`, and check `node_modules/next/dist/docs/` before relying on an API.
