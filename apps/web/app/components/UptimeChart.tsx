@@ -8,74 +8,139 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
+  ReferenceArea,
 } from 'recharts'
+import type { TooltipContentProps } from 'recharts'
+
+import { bucketChecks, type StatsWindow } from '@/lib/windows'
+import type { Incident, RecentCheck } from '@/types/stats'
 
 type Props = {
-  data: {
-    checkedAt: string
-    isUp: boolean
-  }[]
+  data: RecentCheck[]
+  window: StatsWindow
+  incidents?: Incident[]
+  /** Instant the data was fetched; keeps render pure and buckets stable. */
+  now: number
 }
 
-function CustomTooltip({ active, payload, label }: any) {
+function CustomTooltip({ active, payload, label }: TooltipContentProps) {
   if (!active || !payload?.length) return null
-  const isUp = payload[0].value === 100
+
+  const point = payload[0].payload as {
+    uptime: number | null
+    totalChecks: number
+    failures: number
+  }
+
+  if (point.uptime === null) {
+    return (
+      <div className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs shadow-lg">
+        <p className="font-medium text-slate-700">{label}</p>
+        <p className="mt-1 text-slate-400">No checks recorded</p>
+      </div>
+    )
+  }
+
   return (
-    <div className="rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-lg text-xs">
+    <div className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs shadow-lg">
       <p className="font-medium text-slate-700">{label}</p>
       <p
-        className={`mt-1 font-semibold ${isUp ? 'text-emerald-600' : 'text-red-500'}`}
+        className={`mt-1 font-semibold ${
+          point.uptime === 100 ? 'text-emerald-600' : 'text-red-500'
+        }`}
       >
-        {isUp ? '🟢 Up' : '🔴 Down'}
+        {point.uptime}% up
+      </p>
+      <p className="mt-0.5 text-slate-400">
+        {point.totalChecks} checks
+        {point.failures > 0 && ` · ${point.failures} failed`}
       </p>
     </div>
   )
 }
 
-export default function UptimeChart({ data }: Props) {
-  const formatted = [...data].reverse().map((item) => ({
-    time: new Date(item.checkedAt).toLocaleTimeString([], {
-      hour: '2-digit',
-      minute: '2-digit',
-    }),
-    uptime: item.isUp ? 100 : 0,
-  }))
+export default function UptimeChart({
+  data,
+  window,
+  incidents = [],
+  now,
+}: Props) {
+  const buckets = bucketChecks(data, window, new Date(now))
+  const measured = buckets.filter((bucket) => bucket.uptime !== null)
 
-  const uptimePct = formatted.length
-    ? Math.round(
-        (formatted.filter((d) => d.uptime === 100).length / formatted.length) *
-          100,
+  const uptimePct = measured.length
+    ? Number(
+        (
+          measured.reduce((sum, bucket) => sum + (bucket.uptime ?? 0), 0) /
+          measured.length
+        ).toFixed(2),
       )
     : 100
 
+  // Incidents are drawn as shaded bands, so map their timestamps onto the
+  // nearest bucket labels the category axis actually knows about.
+  const bucketLabelAt = (time: number): string | null => {
+    const bucket = buckets.find(
+      (candidate, index) =>
+        time >= candidate.start &&
+        (index === buckets.length - 1 || time < buckets[index + 1].start),
+    )
+
+    return bucket?.label ?? null
+  }
+
+  const bands = incidents
+    .map((incident) => {
+      const startedAt = new Date(incident.startedAt).getTime()
+      const resolvedAt = incident.resolvedAt
+        ? new Date(incident.resolvedAt).getTime()
+        : now
+
+      // Clamp to the window so incidents that began earlier still show.
+      const first = buckets[0]?.start ?? 0
+      const from = bucketLabelAt(Math.max(startedAt, first))
+      const to = bucketLabelAt(Math.min(resolvedAt, now))
+
+      return from && to ? { id: incident.id, from, to } : null
+    })
+    .filter((band): band is { id: string; from: string; to: string } => !!band)
+
   return (
-    <div className="card p-5 min-w-0">
+    <div className="card min-w-0 p-5">
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-500">
           Uptime Trend
         </h2>
-        <span
-          className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
-            uptimePct >= 99
-              ? 'bg-emerald-50 text-emerald-700'
-              : uptimePct >= 95
-                ? 'bg-amber-50 text-amber-700'
-                : 'bg-red-50 text-red-700'
-          }`}
-        >
-          {uptimePct}% uptime
-        </span>
+        <div className="flex items-center gap-2">
+          {bands.length > 0 && (
+            <span className="flex items-center gap-1.5 text-xs text-slate-400">
+              <span className="h-2 w-3 rounded-sm bg-red-200" />
+              incident
+            </span>
+          )}
+          <span
+            className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+              uptimePct >= 99
+                ? 'bg-emerald-50 text-emerald-700'
+                : uptimePct >= 95
+                  ? 'bg-amber-50 text-amber-700'
+                  : 'bg-red-50 text-red-700'
+            }`}
+          >
+            {uptimePct}% uptime
+          </span>
+        </div>
       </div>
 
-      {formatted.length === 0 ? (
-        <div className="h-64 flex items-center justify-center text-sm text-slate-400">
+      {measured.length === 0 ? (
+        <div className="flex h-64 items-center justify-center text-sm text-slate-400">
           No data yet — checks will appear here once the worker runs.
         </div>
       ) : (
         <div className="h-64 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart
-              data={formatted}
+              data={buckets}
               margin={{ top: 4, right: 4, bottom: 0, left: -10 }}
             >
               <defs>
@@ -84,13 +149,17 @@ export default function UptimeChart({ data }: Props) {
                   <stop offset="95%" stopColor="#10b981" stopOpacity={0.02} />
                 </linearGradient>
               </defs>
+
               <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+
               <XAxis
-                dataKey="time"
+                dataKey="label"
                 tick={{ fontSize: 11, fill: '#94a3b8' }}
                 axisLine={false}
                 tickLine={false}
+                minTickGap={24}
               />
+
               <YAxis
                 domain={[0, 100]}
                 tick={{ fontSize: 11, fill: '#94a3b8' }}
@@ -98,7 +167,21 @@ export default function UptimeChart({ data }: Props) {
                 tickLine={false}
                 unit="%"
               />
-              <Tooltip content={<CustomTooltip />} />
+
+              {bands.map((band) => (
+                <ReferenceArea
+                  key={band.id}
+                  x1={band.from}
+                  x2={band.to}
+                  fill="#ef4444"
+                  fillOpacity={0.12}
+                  stroke="#ef4444"
+                  strokeOpacity={0.25}
+                />
+              ))}
+
+              <Tooltip content={CustomTooltip} />
+
               <Area
                 type="monotone"
                 dataKey="uptime"
@@ -106,6 +189,7 @@ export default function UptimeChart({ data }: Props) {
                 strokeWidth={2}
                 fill="url(#uptimeGradient)"
                 dot={false}
+                connectNulls={false}
                 activeDot={{ r: 4, fill: '#10b981', strokeWidth: 0 }}
               />
             </AreaChart>

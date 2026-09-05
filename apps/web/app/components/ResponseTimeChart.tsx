@@ -10,41 +10,60 @@ import {
   CartesianGrid,
   ReferenceLine,
 } from 'recharts'
+import type { TooltipContentProps } from 'recharts'
+
+import { bucketChecks, type StatsWindow } from '@/lib/windows'
+import type { RecentCheck } from '@/types/stats'
 
 type Props = {
-  data: {
-    checkedAt: string
-    responseTime: number
-  }[]
+  data: RecentCheck[]
+  window: StatsWindow
+  /** Instant the data was fetched; keeps render pure and buckets stable. */
+  now: number
 }
 
-function CustomTooltip({ active, payload, label }: any) {
+function CustomTooltip({ active, payload, label }: TooltipContentProps) {
   if (!active || !payload?.length) return null
+
+  const point = payload[0].payload as {
+    averageResponseTime: number | null
+    totalChecks: number
+  }
+
   return (
-    <div className="rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-lg text-xs">
+    <div className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs shadow-lg">
       <p className="font-medium text-slate-700">{label}</p>
-      <p className="mt-1 text-blue-600 font-semibold">{payload[0].value}ms</p>
+      {point.averageResponseTime === null ? (
+        <p className="mt-1 text-slate-400">No successful checks</p>
+      ) : (
+        <>
+          <p className="mt-1 font-semibold text-blue-600">
+            {point.averageResponseTime}ms
+          </p>
+          <p className="mt-0.5 text-slate-400">{point.totalChecks} checks</p>
+        </>
+      )}
     </div>
   )
 }
 
-export default function ResponseTimeChart({ data }: Props) {
-  const formatted = [...data].reverse().map((item) => ({
-    time: new Date(item.checkedAt).toLocaleTimeString([], {
-      hour: '2-digit',
-      minute: '2-digit',
-    }),
-    responseTime: item.responseTime,
-  }))
+export default function ResponseTimeChart({ data, window, now }: Props) {
+  const buckets = bucketChecks(data, window, new Date(now))
+  const measured = buckets.filter(
+    (bucket) => bucket.averageResponseTime !== null,
+  )
 
-  const avg = formatted.length
+  const avg = measured.length
     ? Math.round(
-        formatted.reduce((s, d) => s + d.responseTime, 0) / formatted.length,
+        measured.reduce(
+          (sum, bucket) => sum + (bucket.averageResponseTime ?? 0),
+          0,
+        ) / measured.length,
       )
     : 0
 
   return (
-    <div className="card p-5 min-w-0">
+    <div className="card min-w-0 p-5">
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-500">
           Response Time
@@ -54,31 +73,36 @@ export default function ResponseTimeChart({ data }: Props) {
         </span>
       </div>
 
-      {formatted.length === 0 ? (
-        <div className="h-64 flex items-center justify-center text-sm text-slate-400">
+      {measured.length === 0 ? (
+        <div className="flex h-64 items-center justify-center text-sm text-slate-400">
           No data yet — checks will appear here once the worker runs.
         </div>
       ) : (
         <div className="h-64 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart
-              data={formatted}
+              data={buckets}
               margin={{ top: 4, right: 4, bottom: 0, left: -10 }}
             >
               <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+
               <XAxis
-                dataKey="time"
+                dataKey="label"
                 tick={{ fontSize: 11, fill: '#94a3b8' }}
                 axisLine={false}
                 tickLine={false}
+                minTickGap={24}
               />
+
               <YAxis
                 tick={{ fontSize: 11, fill: '#94a3b8' }}
                 axisLine={false}
                 tickLine={false}
                 unit="ms"
               />
-              <Tooltip content={<CustomTooltip />} />
+
+              <Tooltip content={CustomTooltip} />
+
               {avg > 0 && (
                 <ReferenceLine
                   y={avg}
@@ -87,12 +111,14 @@ export default function ResponseTimeChart({ data }: Props) {
                   strokeOpacity={0.5}
                 />
               )}
+
               <Line
                 type="monotone"
-                dataKey="responseTime"
+                dataKey="averageResponseTime"
                 stroke="#3b82f6"
                 strokeWidth={2}
                 dot={false}
+                connectNulls={false}
                 activeDot={{ r: 4, fill: '#3b82f6', strokeWidth: 0 }}
               />
             </LineChart>

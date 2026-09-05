@@ -1,4 +1,5 @@
-import { EndpointStats } from '@/types/stats'
+import type { EndpointStats, IncidentWithEndpoint } from '@/types/stats'
+import type { StatsWindow } from '@/lib/windows'
 
 export class ApiError extends Error {
   constructor(
@@ -11,69 +12,82 @@ export class ApiError extends Error {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL
 
-console.log('API_URL:', API_URL)
-
 export type Endpoint = {
   id: string
   url: string
+  failureThreshold?: number
   createdAt?: string
+}
+
+export type OpenIncident = {
+  id: string
+  startedAt: string
+  cause: string
 }
 
 export type EndpointSummary = {
   id: string
   url: string
   createdAt: string
+  window: StatsWindow
   isUp: boolean | null
   uptimePercentage: number | null
   averageResponseTime: number | null
   totalChecks: number
   lastCheckedAt: string | null
+  openIncident: OpenIncident | null
+}
+
+export type WorkerRun = {
+  id: string
+  startedAt: string
+  durationMs: number
+  total: number
+  successful: number
+  failures: number
+}
+
+const request = async <T>(path: string, init?: RequestInit): Promise<T> => {
+  const res = await fetch(`${API_URL}${path}`, init)
+
+  if (!res.ok) {
+    throw new ApiError(res.status, `Request failed: GET ${path}`)
+  }
+
+  return res.json()
 }
 
 export const api = {
-  async getEndpoints(): Promise<Endpoint[]> {
-    const res = await fetch(`${API_URL}/endpoints`)
-
-    if (!res.ok) {
-      throw new Error('Failed to fetch endpoints')
-    }
-
-    return res.json()
+  getEndpoints(): Promise<Endpoint[]> {
+    return request<Endpoint[]>('/endpoints')
   },
 
-  async createEndpoint(url: string): Promise<Endpoint> {
-    const res = await fetch(`${API_URL}/endpoints`, {
+  createEndpoint(url: string): Promise<Endpoint> {
+    return request<Endpoint>('/endpoints', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ url }),
     })
-
-    if (!res.ok) {
-      throw new ApiError(res.status, 'Failed to create endpoint')
-    }
-
-    return res.json()
   },
 
-  async getEndpointsSummary(): Promise<EndpointSummary[]> {
-    const res = await fetch(`${API_URL}/endpoints/summary`)
-
-    if (!res.ok) {
-      throw new Error('Failed to fetch endpoints summary')
-    }
-
-    return res.json()
+  getEndpointsSummary(window: StatsWindow = '24h'): Promise<EndpointSummary[]> {
+    return request<EndpointSummary[]>(`/endpoints/summary?window=${window}`)
   },
 
-  async getEndpointStats(id: string): Promise<EndpointStats> {
-    const res = await fetch(`${API_URL}/endpoints/${id}/stats`)
+  getEndpointStats(
+    id: string,
+    window: StatsWindow = '24h',
+  ): Promise<EndpointStats> {
+    return request<EndpointStats>(`/endpoints/${id}/stats?window=${window}`)
+  },
 
-    if (!res.ok) {
-      throw new Error('Failed to fetch endpoint stats')
-    }
+  getIncidents(limit = 50): Promise<IncidentWithEndpoint[]> {
+    return request<IncidentWithEndpoint[]>(`/incidents?limit=${limit}`)
+  },
 
-    return res.json()
+  getWorkerRuns(limit = 20): Promise<WorkerRun[]> {
+    return request<WorkerRun[]>(`/worker-runs?limit=${limit}`)
   },
 }
