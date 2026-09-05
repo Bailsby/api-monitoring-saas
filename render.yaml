@@ -1,0 +1,36 @@
+services:
+  - type: web
+    name: api-monitor-api
+    runtime: node
+    plan: free
+    region: frankfurt
+    rootDir: apps/api
+
+    # The generated Prisma client is not committed, so it has to be built here.
+    buildCommand: npm ci && npx prisma generate && npm run build
+    startCommand: npx prisma migrate deploy && npm run start
+
+    healthCheckPath: /health
+
+    envVars:
+      - key: NODE_ENV
+        value: production
+
+      # Set in the Render dashboard, not here — it is a secret.
+      - key: DATABASE_URL
+        sync: false
+
+      # Comma-separated. Include the Vercel production domain, and the preview
+      # domain if you want previews to be able to call the API.
+      - key: CORS_ORIGINS
+        sync: false
+
+      # Alerting. Leave unset to run without it.
+      - key: RESEND_API_KEY
+        sync: false
+      - key: ALERT_FROM_EMAIL
+        sync: false
+      - key: ALERT_TO_EMAIL
+        sync: false
+      - key: DASHBOARD_URL
+        sync: false
