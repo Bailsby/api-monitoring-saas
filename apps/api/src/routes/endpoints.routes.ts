@@ -6,6 +6,7 @@ import { parseWindow, windowStart } from '../lib/window.js'
 
 const PRISMA_ERRORS = {
   UNIQUE_CONSTRAINT: 'P2002',
+  RECORD_NOT_FOUND: 'P2025',
 } as const
 
 export const endpointRoutes = async (
@@ -43,6 +44,44 @@ export const endpointRoutes = async (
         return reply.status(409).send({
           message: 'Endpoint already exists',
         })
+      }
+
+      throw err
+    }
+  })
+
+  app.patch<{
+    Params: { id: string }
+    Body: {
+      failureThreshold?: number
+      alertsEnabled?: boolean
+      alertEmail?: string | null
+    }
+  }>('/endpoints/:id', async (request, reply) => {
+    const { failureThreshold, alertsEnabled, alertEmail } = request.body
+
+    if (failureThreshold !== undefined && failureThreshold < 1) {
+      return reply.status(400).send({
+        message: 'failureThreshold must be at least 1',
+      })
+    }
+
+    try {
+      return await deps.prisma.monitoredEndpoint.update({
+        where: { id: request.params.id },
+        data: {
+          ...(failureThreshold !== undefined && { failureThreshold }),
+          ...(alertsEnabled !== undefined && { alertsEnabled }),
+          // An explicit null clears the address and falls back to the default.
+          ...(alertEmail !== undefined && { alertEmail: alertEmail || null }),
+        },
+      })
+    } catch (err: unknown) {
+      if (
+        err instanceof Prisma.PrismaClientKnownRequestError &&
+        err.code === PRISMA_ERRORS.RECORD_NOT_FOUND
+      ) {
+        return reply.status(404).send({ message: 'Endpoint not found' })
       }
 
       throw err

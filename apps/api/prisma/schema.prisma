@@ -15,6 +15,10 @@ model MonitoredEndpoint {
   /// endpoint so a flaky endpoint can be made less noisy without affecting others.
   failureThreshold Int @default(2)
 
+  alertsEnabled Boolean @default(false)
+  /// Falls back to ALERT_TO_EMAIL when unset.
+  alertEmail    String?
+
   checks    EndpointCheck[]
   incidents Incident[]
 }
@@ -42,6 +46,11 @@ model Incident {
   cause      String
   /// Populated on resolution; null while the incident is ongoing.
   durationMs Int?
+
+  /// Alert bookkeeping. Stamped once per incident per transition, so a
+  /// notification is sent for the incident rather than for every failed check.
+  openAlertSentAt     DateTime?
+  resolvedAlertSentAt DateTime?
 
   endpointId String
   endpoint   MonitoredEndpoint @relation(fields: [endpointId], references: [id], onDelete: Cascade)

@@ -1,5 +1,11 @@
 import { prisma } from '../lib/prisma.js'
 import { decideIncidentAction } from '../services/incidents.service.js'
+import {
+  buildAlertMessage,
+  resolveRecipient,
+  shouldSendAlert,
+} from '../services/alerts.service.js'
+import { alertConfig, createEmailTransport } from '../lib/email.js'
 
 type CheckResult = {
   statusCode: number
@@ -86,14 +92,83 @@ const fetchWithRetry = async (url: string) => {
 // ---------- INCIDENT TRANSITIONS ----------
 type IncidentTransition = 'opened' | 'resolved' | null
 
+type AlertableEndpoint = {
+  id: string
+  url: string
+  failureThreshold: number
+  alertsEnabled: boolean
+  alertEmail: string | null
+}
+
+/**
+ * Sends the alert for an incident transition, if the endpoint is configured for
+ * it and the notification has not already gone out.
+ *
+ * Alert failures are logged and swallowed: a bounced email must not stop the
+ * next endpoint from being checked, and the incident itself is already
+ * recorded. The sent-at stamp is only written once the send succeeds, so a
+ * transient failure retries on the next run instead of being lost.
+ */
+const dispatchAlert = async (
+  endpoint: AlertableEndpoint,
+  incidentId: string,
+  kind: 'opened' | 'resolved',
+) => {
+  const transport = createEmailTransport()
+
+  if (!transport) return
+
+  const { fallbackRecipient, dashboardUrl } = alertConfig()
+
+  const incident = await prisma.incident.findUnique({
+    where: { id: incidentId },
+  })
+
+  if (!incident) return
+
+  if (!shouldSendAlert(endpoint, incident, kind, fallbackRecipient)) return
+
+  const recipient = resolveRecipient(endpoint, fallbackRecipient)
+
+  if (!recipient) return
+
+  try {
+    await transport.send(
+      buildAlertMessage({
+        endpoint,
+        incident,
+        kind,
+        recipient,
+        dashboardUrl,
+      }),
+    )
+
+    await prisma.incident.update({
+      where: { id: incidentId },
+      data:
+        kind === 'opened'
+          ? { openAlertSentAt: new Date() }
+          : { resolvedAlertSentAt: new Date() },
+    })
+  } catch (error) {
+    console.error(
+      JSON.stringify({
+        event: 'alert_failed',
+        incidentId,
+        kind,
+        error: error instanceof Error ? error.message : String(error),
+      }),
+    )
+  }
+}
+
 /**
  * Reconciles an endpoint's incident state against its latest checks. Returns
- * which transition occurred so the worker can report it (and, later, alert).
+ * which transition occurred so the worker can report it.
  */
-const reconcileIncident = async (endpoint: {
-  id: string
-  failureThreshold: number
-}): Promise<IncidentTransition> => {
+const reconcileIncident = async (
+  endpoint: AlertableEndpoint,
+): Promise<IncidentTransition> => {
   const threshold = Math.max(endpoint.failureThreshold, 1)
 
   const [recentChecks, openIncident] = await Promise.all([
@@ -117,13 +192,15 @@ const reconcileIncident = async (endpoint: {
   })
 
   if (decision.action === 'open') {
-    await prisma.incident.create({
+    const incident = await prisma.incident.create({
       data: {
         endpointId: endpoint.id,
         startedAt: decision.startedAt,
         cause: decision.cause,
       },
     })
+
+    await dispatchAlert(endpoint, incident.id, 'opened')
 
     return 'opened'
   }
@@ -137,6 +214,8 @@ const reconcileIncident = async (endpoint: {
       },
     })
 
+    await dispatchAlert(endpoint, decision.incidentId, 'resolved')
+
     return 'resolved'
   }
 
@@ -146,7 +225,13 @@ const reconcileIncident = async (endpoint: {
 // ---------- MAIN WORKER ----------
 export const checkEndpoints = async (): Promise<WorkerMetrics> => {
   const endpoints = await prisma.monitoredEndpoint.findMany({
-    select: { id: true, url: true, failureThreshold: true },
+    select: {
+      id: true,
+      url: true,
+      failureThreshold: true,
+      alertsEnabled: true,
+      alertEmail: true,
+    },
   })
 
   let successful = 0
