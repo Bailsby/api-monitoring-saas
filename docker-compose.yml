@@ -18,7 +18,7 @@ services:
       context: ./apps/api
     # The worker itself is run-once-and-exit; in production a GitHub Actions
     # cron invokes it. This loop is the local stand-in for that scheduler.
-    command: sh -c 'while true; do npm run dev:worker; sleep 600; done'
+    command: sh -c 'while true; do npm run worker; sleep 600; done'
     volumes:
       - ./apps/api:/app
       - /app/node_modules

@@ -1,0 +1,55 @@
+name: Run monitoring checks
+
+# The worker is run-once-and-exit, so this workflow is its scheduler. It does
+# double duty: the API is hosted on a free tier that sleeps after 15 minutes
+# idle with a slow cold start, and warming it on the same schedule keeps the
+# demo from looking broken to anyone who clicks it.
+#
+# GitHub's scheduler is best-effort and can run late under load. That is fine
+# for a demo and is called out in the README rather than overclaimed.
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+# A late run must not stack up behind the previous one.
+concurrency:
+  group: monitoring-checks
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    defaults:
+      run:
+        working-directory: apps/api
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/api/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Warm the API
+        # Best effort: the checks still matter if the dashboard API is down.
+        continue-on-error: true
+        run: curl --silent --show-error --max-time 90 "$API_URL/health" || true
+        env:
+          API_URL: ${{ vars.API_URL }}
+
+      - name: Run checks
+        run: npm run worker
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
