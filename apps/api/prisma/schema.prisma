@@ -15,6 +15,12 @@ model MonitoredEndpoint {
   /// endpoint so a flaky endpoint can be made less noisy without affecting others.
   failureThreshold Int @default(2)
 
+  /// Display name and shareable slug for the public status page. An endpoint
+  /// is only reachable publicly once it has a slug and isPublic is set.
+  name     String?
+  slug     String? @unique
+  isPublic Boolean @default(false)
+
   alertsEnabled Boolean @default(false)
   /// Falls back to ALERT_TO_EMAIL when unset.
   alertEmail    String?

@@ -6,10 +6,10 @@ import { api, type EndpointSummary } from '@/lib/api'
 import { WINDOWS, type StatsWindow } from '@/lib/windows'
 import type { IncidentWithEndpoint } from '@/types/stats'
 
-import EndpointsTable from './components/EndpointsTable'
-import AddEndpointModal from './components/AddEndpointModal'
-import IncidentsTable from './components/IncidentsTable'
-import WindowSelector from './components/WindowSelector'
+import EndpointsTable from '@/app/components/EndpointsTable'
+import AddEndpointModal from '@/app/components/AddEndpointModal'
+import IncidentsTable from '@/app/components/IncidentsTable'
+import WindowSelector from '@/app/components/WindowSelector'
 
 export default function Dashboard() {
   const [endpoints, setEndpoints] = useState<EndpointSummary[]>([])

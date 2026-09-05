@@ -8,12 +8,12 @@ import { WINDOWS, type StatsWindow } from '@/lib/windows'
 import { formatDuration } from '@/lib/format'
 import type { EndpointStats } from '@/types/stats'
 
-import StatsCard from '../../components/StatsCard'
-import ResponseTimeChart from '../../components/ResponseTimeChart'
-import UptimeChart from '../../components/UptimeChart'
-import IncidentsTable from '../../components/IncidentsTable'
-import WindowSelector from '../../components/WindowSelector'
-import WorkerRunsTable from '../../components/WorkerRunsTable'
+import StatsCard from '@/app/components/StatsCard'
+import ResponseTimeChart from '@/app/components/ResponseTimeChart'
+import UptimeChart from '@/app/components/UptimeChart'
+import IncidentsTable from '@/app/components/IncidentsTable'
+import WindowSelector from '@/app/components/WindowSelector'
+import WorkerRunsTable from '@/app/components/WorkerRunsTable'
 
 type PageProps = {
   params: Promise<{ id: string }>

@@ -3,6 +3,7 @@ import { PrismaClient, Prisma } from '@prisma/client'
 
 import { calculateEndpointStats } from '../services/stats.service.js'
 import { parseWindow, windowStart } from '../lib/window.js'
+import { slugify } from '../services/status.service.js'
 
 const PRISMA_ERRORS = {
   UNIQUE_CONSTRAINT: 'P2002',
@@ -56,9 +57,19 @@ export const endpointRoutes = async (
       failureThreshold?: number
       alertsEnabled?: boolean
       alertEmail?: string | null
+      name?: string | null
+      slug?: string | null
+      isPublic?: boolean
     }
   }>('/endpoints/:id', async (request, reply) => {
-    const { failureThreshold, alertsEnabled, alertEmail } = request.body
+    const {
+      failureThreshold,
+      alertsEnabled,
+      alertEmail,
+      name,
+      slug,
+      isPublic,
+    } = request.body
 
     if (failureThreshold !== undefined && failureThreshold < 1) {
       return reply.status(400).send({
@@ -74,14 +85,20 @@ export const endpointRoutes = async (
           ...(alertsEnabled !== undefined && { alertsEnabled }),
           // An explicit null clears the address and falls back to the default.
           ...(alertEmail !== undefined && { alertEmail: alertEmail || null }),
+          ...(name !== undefined && { name: name || null }),
+          ...(slug !== undefined && { slug: slug ? slugify(slug) : null }),
+          ...(isPublic !== undefined && { isPublic }),
         },
       })
     } catch (err: unknown) {
-      if (
-        err instanceof Prisma.PrismaClientKnownRequestError &&
-        err.code === PRISMA_ERRORS.RECORD_NOT_FOUND
-      ) {
-        return reply.status(404).send({ message: 'Endpoint not found' })
+      if (err instanceof Prisma.PrismaClientKnownRequestError) {
+        if (err.code === PRISMA_ERRORS.RECORD_NOT_FOUND) {
+          return reply.status(404).send({ message: 'Endpoint not found' })
+        }
+
+        if (err.code === PRISMA_ERRORS.UNIQUE_CONSTRAINT) {
+          return reply.status(409).send({ message: 'Slug already in use' })
+        }
       }
 
       throw err

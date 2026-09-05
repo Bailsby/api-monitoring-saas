@@ -8,6 +8,7 @@ import { checkRoutes } from './routes/checks.routes.js'
 import { healthRoutes } from './routes/health.routes.js'
 import { workerRunRoutes } from './routes/worker-runs.routes.js'
 import { incidentRoutes } from './routes/incidents.routes.js'
+import { statusRoutes } from './routes/status.routes.js'
 
 export const buildApp = (deps: { prisma: PrismaClient }) => {
   const app = Fastify({
@@ -24,6 +25,7 @@ export const buildApp = (deps: { prisma: PrismaClient }) => {
   checkRoutes(app, deps)
   workerRunRoutes(app, deps)
   incidentRoutes(app, deps)
+  statusRoutes(app, deps)
 
   return app
 }

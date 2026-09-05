@@ -3,8 +3,6 @@ import { Geist, Geist_Mono } from 'next/font/google'
 
 import './globals.css'
 
-import DashboardShell from './components/DashboardShell'
-
 const geistSans = Geist({
   variable: '--font-geist-sans',
   subsets: ['latin'],
@@ -27,9 +25,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
-      <body>
-        <DashboardShell>{children}</DashboardShell>
-      </body>
+      <body>{children}</body>
     </html>
   )
 }

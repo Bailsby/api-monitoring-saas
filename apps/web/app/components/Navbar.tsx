@@ -27,9 +27,12 @@ export default function Navbar() {
         </Link>
 
         <div className="flex items-center gap-3">
-          <span className="hidden sm:block text-xs text-slate-400">
-            Monitoring Dashboard
-          </span>
+          <Link
+            href="/status"
+            className="text-xs font-medium text-slate-500 transition-colors hover:text-slate-900"
+          >
+            Public status page
+          </Link>
           <div className="flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
             <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
             Live

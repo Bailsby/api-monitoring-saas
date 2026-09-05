@@ -38,6 +38,9 @@ services:
       - /app/node_modules
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:3000
+      # Server-rendered status pages fetch from inside the network, where
+      # localhost is the web container itself rather than the API.
+      API_INTERNAL_URL: http://api:3000
       WATCHPACK_POLLING: "true"
     depends_on:
       - api

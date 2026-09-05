@@ -30,6 +30,9 @@ type Outage = {
 
 type EndpointProfile = {
   url: string
+  /** Display name and slug for the public status page. */
+  name: string
+  slug: string
   failureThreshold?: number
   /** Typical response time in ms when healthy. */
   baselineMs: number
@@ -48,6 +51,8 @@ const profiles: EndpointProfile[] = [
   {
     // The portfolio site itself — the "everything is fine" baseline.
     url: 'https://jake-bailey.dev',
+    name: 'Portfolio Site',
+    slug: 'portfolio-site',
     baselineMs: 180,
     jitterMs: 60,
     outages: [
@@ -61,12 +66,16 @@ const profiles: EndpointProfile[] = [
   },
   {
     url: 'https://api.github.com',
+    name: 'GitHub API',
+    slug: 'github-api',
     baselineMs: 240,
     jitterMs: 90,
     outages: [],
   },
   {
     url: 'https://registry.npmjs.org',
+    name: 'npm Registry',
+    slug: 'npm-registry',
     baselineMs: 320,
     jitterMs: 120,
     outages: [
@@ -87,6 +96,8 @@ const profiles: EndpointProfile[] = [
   {
     // The interesting one: response times climb for a week, then it falls over.
     url: 'https://dummyjson.com/products/1',
+    name: 'Product Catalogue API',
+    slug: 'product-catalogue-api',
     baselineMs: 400,
     jitterMs: 100,
     degradation: { days: 10, finalMultiplier: 4.5 },
@@ -103,6 +114,8 @@ const profiles: EndpointProfile[] = [
     // Returns 503 by design, so the demo always has an ongoing incident and a
     // live alert to point at.
     url: 'https://httpstat.us/503',
+    name: 'Payments Gateway',
+    slug: 'payments-gateway',
     failureThreshold: 3,
     baselineMs: 150,
     jitterMs: 40,
@@ -311,6 +324,12 @@ const seed = async () => {
     const endpoint = await prisma.monitoredEndpoint.create({
       data: {
         url: profile.url,
+        name: profile.name,
+        slug: profile.slug,
+        isPublic: true,
+        // Alerting is on for the demo, but with no Resend key configured
+        // nothing is actually sent.
+        alertsEnabled: true,
         failureThreshold,
         createdAt: new Date(
           now.getTime() - DAYS_OF_HISTORY * 24 * 60 * 60 * 1000,
