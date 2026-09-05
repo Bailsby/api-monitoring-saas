@@ -23,6 +23,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
+    # prisma.config.ts resolves DATABASE_URL eagerly, so every Prisma
+    # invocation needs it — including generate, which never connects.
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
     defaults:
       run:
         working-directory: apps/api
@@ -51,5 +56,3 @@ jobs:
 
       - name: Run checks
         run: npm run worker
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
