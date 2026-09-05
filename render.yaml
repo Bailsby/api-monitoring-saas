@@ -6,13 +6,20 @@ services:
     region: frankfurt
     rootDir: apps/api
 
-    # The generated Prisma client is not committed, so it has to be built here.
-    buildCommand: npm ci && npx prisma generate && npm run build
+    # NODE_ENV=production below makes npm omit devDependencies, but the
+    # build needs them: TypeScript to compile and the Prisma CLI to generate
+    # the client and run migrations on start. --include=dev overrides that.
+    buildCommand: npm ci --include=dev && npx prisma generate && npm run build
     startCommand: npx prisma migrate deploy && npm run start
 
     healthCheckPath: /health
 
     envVars:
+      # Pinned so the deployed runtime matches CI rather than drifting with
+      # Render's default.
+      - key: NODE_VERSION
+        value: '24'
+
       - key: NODE_ENV
         value: production
 

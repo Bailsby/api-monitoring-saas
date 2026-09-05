@@ -11,8 +11,7 @@ every check, and emails you the moment something breaks — and again when it
 recovers. It also gives you a public status page you can send to customers
 instead of fielding "is it just me?" messages.
 
-<!-- TODO: replace with a screenshot of the dashboard -->
-<!-- ![The dashboard, showing uptime and response time for five monitored services](docs/screenshots/dashboard.png) -->
+![The dashboard, showing uptime, response times and incident history for five monitored services](docs/screenshots/dashboard.png)
 
 ## What it does
 
@@ -33,7 +32,7 @@ a shareable URL with no login. Nothing is public unless you publish it.
 failure and a 500 are different problems with different fixes, and are recorded
 as such.
 
-<!-- ![A public status page](docs/screenshots/status-page.png) -->
+![A public status page during an outage, showing uptime figures, per-day history and the incident log](docs/screenshots/status-page.png)
 
 ## Live demo
 
