@@ -27,6 +27,10 @@ jobs:
     # invocation needs it — including generate, which never connects.
     env:
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      # Days of raw check history to keep. Pruning happens in the worker, so
+      # this belongs here rather than on the API service. Unset would default
+      # to the same 90; it is explicit so the value is visible where it acts.
+      RETENTION_DAYS: '90'
 
     defaults:
       run:

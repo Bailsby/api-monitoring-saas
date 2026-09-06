@@ -37,10 +37,6 @@ services:
       - key: ADMIN_TOKEN
         generateValue: true
 
-      # Days of raw check history to keep; 0 keeps everything.
-      - key: RETENTION_DAYS
-        value: '90'
-
       # Alerting. Not enabled on this deployment: with these unset the mail
       # transport is null and alerting is skipped entirely. Checks, incidents
       # and status pages are unaffected.
