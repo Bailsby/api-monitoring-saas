@@ -5,6 +5,7 @@ coverage
 .prisma
 .vscode
 
-# Agent instructions — local tooling, not part of the project
+# Agent instructions and operational notes — local, not part of the project
 CLAUDE.md
 AGENTS.md
+DEPLOYMENT.md

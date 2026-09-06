@@ -37,7 +37,9 @@ services:
       - key: ADMIN_TOKEN
         generateValue: true
 
-      # Alerting. Leave unset to run without it.
+      # Alerting. Not enabled on this deployment: with these unset the mail
+      # transport is null and alerting is skipped entirely. Checks, incidents
+      # and status pages are unaffected.
       - key: RESEND_API_KEY
         sync: false
       - key: ALERT_FROM_EMAIL

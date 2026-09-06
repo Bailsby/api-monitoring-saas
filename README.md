@@ -7,8 +7,8 @@ For most small businesses the answer is "when someone complains" — which is
 usually after they have given up and gone elsewhere.
 
 API Monitor checks your website and APIs every few minutes, keeps a record of
-every check, and emails you the moment something breaks — and again when it
-recovers. It also gives you a public status page you can send to customers
+every check, and groups failures into incidents with a start, an end and a
+cause. It also gives you a public status page you can send to customers
 instead of fielding "is it just me?" messages.
 
 ![The dashboard, showing uptime, response times and incident history for five monitored services](docs/screenshots/dashboard.png)
@@ -17,8 +17,8 @@ instead of fielding "is it just me?" messages.
 
 **Tells you when something breaks.** Failed checks are grouped into incidents
 with a start, an end and a cause, so a two-hour outage is one incident rather
-than twelve separate alarms. You get one email when it goes down and one when it
-comes back — not one per failed check.
+than twelve separate alarms — and an incident is what gets reported, so a long
+outage does not become a wall of identical alarms.
 
 **Shows you what "normal" looks like.** Response times are tracked over 24
 hours, 7 days and 30 days. Services rarely fail without warning; they get slower
@@ -89,15 +89,24 @@ npx prisma migrate deploy
 npm run seed
 ```
 
-Alerting stays switched off until you add a Resend API key — see
-[`apps/api/.env.example`](apps/api/.env.example). Everything else works without
-it.
+Email alerting is built but not switched on — see the note below. Everything
+else works out of the box.
+
+## Email alerting
+
+The alerting path is implemented and tested — incidents carry sent-at
+timestamps, notifications fire on open and close rather than per failed check,
+and a failed send retries on the next run instead of being dropped.
+
+**It is not switched on in the demo.** No mail provider is configured, so the
+transport is null and alerting is skipped; checks, incidents and status pages
+are unaffected. Enabling it is a matter of setting an API key and a sender
+address, and turning it on per endpoint.
 
 ## Deploying
 
-See [DEPLOYMENT.md](DEPLOYMENT.md). It runs entirely on free tiers: Vercel for
-the dashboard, Render for the API, Neon or Supabase for Postgres, and GitHub
-Actions as the scheduler.
+Runs entirely on free tiers: Vercel for the dashboard, Render for the API,
+Neon for Postgres, and GitHub Actions as the scheduler.
 
 ## How it is built
 
@@ -110,7 +119,6 @@ A monorepo with two applications and a scheduled worker.
 | Dashboard | Next.js (App Router), React, Tailwind, Recharts |
 | Worker    | Standalone TypeScript script, run by cron       |
 | Tests     | Vitest                                          |
-| Email     | Resend                                          |
 
 **The worker runs once and exits** rather than looping forever. Scheduling is
 external — GitHub Actions in production, Compose locally. That removes the need
