@@ -21,6 +21,15 @@ export type IncidentWithEndpoint = Incident & {
   endpointUrl: string
 }
 
+export type SeriesPoint = {
+  /** Start of the bucket, ISO 8601. Formatted client-side, in the viewer's timezone. */
+  start: string
+  uptime: number | null
+  averageResponseTime: number | null
+  totalChecks: number
+  failures: number
+}
+
 export type EndpointStats = {
   url: string
   window: StatsWindow
@@ -30,6 +39,9 @@ export type EndpointStats = {
   totalFailures: number
   errorBreakdown: Record<string, number>
   lastCheckedAt: string
+  /** Pre-aggregated by the API; the raw checks are not sent. */
+  series: SeriesPoint[]
+  /** Capped to the most recent few, for the checks table. */
   recentChecks: RecentCheck[]
   incidents: Incident[]
 }

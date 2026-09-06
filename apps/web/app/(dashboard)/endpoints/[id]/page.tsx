@@ -202,13 +202,9 @@ export default function EndpointPage({ params }: PageProps) {
 
       {/* Charts */}
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-        <ResponseTimeChart
-          data={stats.recentChecks}
-          window={window}
-          now={fetchedAt}
-        />
+        <ResponseTimeChart series={stats.series} window={window} />
         <UptimeChart
-          data={stats.recentChecks}
+          series={stats.series}
           window={window}
           incidents={stats.incidents}
           now={fetchedAt}
@@ -252,8 +248,8 @@ export default function EndpointPage({ params }: PageProps) {
         )}
       </div>
 
-      {/* Checks table — most recent first, capped so long windows stay usable */}
-      <WorkerRunsTable checks={stats.recentChecks.slice(0, 50)} />
+      {/* Checks table — the API already caps this to the most recent few */}
+      <WorkerRunsTable checks={stats.recentChecks} />
     </div>
   )
 }

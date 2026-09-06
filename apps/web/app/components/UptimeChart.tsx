@@ -12,14 +12,14 @@ import {
 } from 'recharts'
 import type { TooltipContentProps } from 'recharts'
 
-import { bucketChecks, type StatsWindow } from '@/lib/windows'
-import type { Incident, RecentCheck } from '@/types/stats'
+import { formatBucketLabel, type StatsWindow } from '@/lib/windows'
+import type { Incident, SeriesPoint } from '@/types/stats'
 
 type Props = {
-  data: RecentCheck[]
+  series: SeriesPoint[]
   window: StatsWindow
   incidents?: Incident[]
-  /** Instant the data was fetched; keeps render pure and buckets stable. */
+  /** Instant the data was fetched; keeps render pure. */
   now: number
 }
 
@@ -60,33 +60,40 @@ function CustomTooltip({ active, payload, label }: TooltipContentProps) {
 }
 
 export default function UptimeChart({
-  data,
+  series,
   window,
   incidents = [],
   now,
 }: Props) {
-  const buckets = bucketChecks(data, window, new Date(now))
-  const measured = buckets.filter((bucket) => bucket.uptime !== null)
+  // The API aggregates; this only adds labels, which need the viewer's locale
+  // and timezone and so cannot be produced server-side.
+  const data = series.map((point) => ({
+    ...point,
+    label: formatBucketLabel(point.start, window),
+  }))
+
+  const measured = data.filter((point) => point.uptime !== null)
 
   const uptimePct = measured.length
     ? Number(
         (
-          measured.reduce((sum, bucket) => sum + (bucket.uptime ?? 0), 0) /
+          measured.reduce((sum, point) => sum + (point.uptime ?? 0), 0) /
           measured.length
         ).toFixed(2),
       )
     : 100
 
   // Incidents are drawn as shaded bands, so map their timestamps onto the
-  // nearest bucket labels the category axis actually knows about.
-  const bucketLabelAt = (time: number): string | null => {
-    const bucket = buckets.find(
-      (candidate, index) =>
-        time >= candidate.start &&
-        (index === buckets.length - 1 || time < buckets[index + 1].start),
-    )
+  // bucket labels the category axis actually knows about.
+  const labelAt = (time: number): string | null => {
+    const index = data.findIndex((point, i) => {
+      const start = new Date(point.start).getTime()
+      const next = data[i + 1]
 
-    return bucket?.label ?? null
+      return time >= start && (!next || time < new Date(next.start).getTime())
+    })
+
+    return index === -1 ? null : data[index].label
   }
 
   const bands = incidents
@@ -97,9 +104,9 @@ export default function UptimeChart({
         : now
 
       // Clamp to the window so incidents that began earlier still show.
-      const first = buckets[0]?.start ?? 0
-      const from = bucketLabelAt(Math.max(startedAt, first))
-      const to = bucketLabelAt(Math.min(resolvedAt, now))
+      const first = data[0] ? new Date(data[0].start).getTime() : 0
+      const from = labelAt(Math.max(startedAt, first))
+      const to = labelAt(Math.min(resolvedAt, now))
 
       return from && to ? { id: incident.id, from, to } : null
     })
@@ -140,7 +147,7 @@ export default function UptimeChart({
         <div className="h-64 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart
-              data={buckets}
+              data={data}
               margin={{ top: 4, right: 4, bottom: 0, left: -10 }}
             >
               <defs>

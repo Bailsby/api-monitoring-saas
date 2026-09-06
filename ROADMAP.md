@@ -81,6 +81,17 @@ each fetch. The worker makes outbound requests from inside CI, so an unvalidated
 URL is a server-side request forgery primitive — private, loopback and
 link-local addresses are refused.
 
+### Charts are aggregated by the API, not the browser
+
+A month of ten-minute checks is about 4,300 rows per endpoint. Sending those to
+the browser so it can reduce them to thirty points made the endpoint response
+368 KB, and it grew with history rather than staying fixed.
+
+The API now returns a bucketed series and a capped list of recent checks, which
+holds the response at roughly 8 KB for any window. Buckets carry a start
+timestamp rather than a formatted label, because formatting needs the viewer’s
+locale and timezone and so has to happen client-side.
+
 ### Checks run every ten minutes
 
 Frequent enough that charts look alive, infrequent enough to stay inside free
@@ -113,8 +124,10 @@ Roughly in order of value.
 - **Response assertions** — check body content or a JSON field, not just the
   status code. A 200 that returns an error payload currently counts as up.
 - **Configurable per-endpoint intervals** — everything shares one schedule.
-- **Retention policy** — checks accumulate indefinitely; at 10-minute polling
-  that is roughly 4,300 rows per endpoint per month.
+- **Retention policy** — checks accumulate indefinitely. Measured, that is
+  449 bytes per row and about 118 MB a year at five endpoints, so storage is
+  years away from being a constraint; the reason to prune is tidiness, and
+  headroom if the endpoint count grows a lot.
 
 ## Deliberately out of scope
 

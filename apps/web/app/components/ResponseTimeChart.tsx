@@ -12,14 +12,12 @@ import {
 } from 'recharts'
 import type { TooltipContentProps } from 'recharts'
 
-import { bucketChecks, type StatsWindow } from '@/lib/windows'
-import type { RecentCheck } from '@/types/stats'
+import { formatBucketLabel, type StatsWindow } from '@/lib/windows'
+import type { SeriesPoint } from '@/types/stats'
 
 type Props = {
-  data: RecentCheck[]
+  series: SeriesPoint[]
   window: StatsWindow
-  /** Instant the data was fetched; keeps render pure and buckets stable. */
-  now: number
 }
 
 function CustomTooltip({ active, payload, label }: TooltipContentProps) {
@@ -47,16 +45,20 @@ function CustomTooltip({ active, payload, label }: TooltipContentProps) {
   )
 }
 
-export default function ResponseTimeChart({ data, window, now }: Props) {
-  const buckets = bucketChecks(data, window, new Date(now))
-  const measured = buckets.filter(
-    (bucket) => bucket.averageResponseTime !== null,
-  )
+export default function ResponseTimeChart({ series, window }: Props) {
+  // Aggregated by the API; labels are added here because they depend on the
+  // viewer locale and timezone.
+  const data = series.map((point) => ({
+    ...point,
+    label: formatBucketLabel(point.start, window),
+  }))
+
+  const measured = data.filter((point) => point.averageResponseTime !== null)
 
   const avg = measured.length
     ? Math.round(
         measured.reduce(
-          (sum, bucket) => sum + (bucket.averageResponseTime ?? 0),
+          (sum, point) => sum + (point.averageResponseTime ?? 0),
           0,
         ) / measured.length,
       )
@@ -81,7 +83,7 @@ export default function ResponseTimeChart({ data, window, now }: Props) {
         <div className="h-64 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart
-              data={buckets}
+              data={data}
               margin={{ top: 4, right: 4, bottom: 0, left: -10 }}
             >
               <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />

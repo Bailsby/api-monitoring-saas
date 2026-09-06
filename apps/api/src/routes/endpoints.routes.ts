@@ -5,7 +5,11 @@ import { calculateEndpointStats } from '../services/stats.service.js'
 import { parseWindow, windowStart } from '../lib/window.js'
 import { slugify } from '../services/status.service.js'
 import { checkMonitorUrl } from '../services/url-safety.service.js'
+import { buildSeries } from '../services/series.service.js'
 import { requireAdmin } from '../lib/auth.js'
+
+/** Enough to fill the recent-checks table without shipping the whole window. */
+const RECENT_CHECKS_LIMIT = 50
 
 const PRISMA_ERRORS = {
   UNIQUE_CONSTRAINT: 'P2002',
@@ -209,10 +213,17 @@ export const endpointRoutes = async (
       })
     }
 
+    // recentChecks is deliberately not returned in full. Over 30 days that is
+    // thousands of rows sent so the browser can reduce them to thirty chart
+    // points; the aggregation happens here instead.
+    const { recentChecks, ...summary } = stats
+
     return {
-      ...stats,
+      ...summary,
       url: endpoint.url,
       window,
+      series: buildSeries(checks, window),
+      recentChecks: recentChecks.slice(0, RECENT_CHECKS_LIMIT),
       incidents: incidents.map((incident) => ({
         ...incident,
         isOngoing: incident.resolvedAt === null,
