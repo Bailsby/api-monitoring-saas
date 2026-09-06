@@ -42,6 +42,8 @@ model EndpointCheck {
   endpoint   MonitoredEndpoint @relation(fields: [endpointId], references: [id], onDelete: Cascade)
 
   @@index([endpointId, checkedAt])
+  /// Supports retention pruning, which filters on age alone.
+  @@index([checkedAt])
 }
 
 model Incident {
@@ -73,4 +75,6 @@ model WorkerRun {
   successful    Int
   failures      Int
   createdAt     DateTime @default(now())
+
+  @@index([startedAt])
 }

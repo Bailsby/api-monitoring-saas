@@ -92,6 +92,25 @@ holds the response at roughly 8 KB for any window. Buckets carry a start
 timestamp rather than a formatted label, because formatting needs the viewer’s
 locale and timezone and so has to happen client-side.
 
+### History is pruned on every run, not nightly
+
+A check row costs about 449 bytes including indexes, so five endpoints at
+ten-minute polling grow by roughly 118 MB a year. That is years away from
+filling a free Postgres tier, but it is unbounded, and it scales with the
+number of endpoints rather than staying still.
+
+The worker deletes anything older than the retention window — 90 days by
+default, comfortably beyond the 30-day dashboard and status page views — on
+every pass rather than in a nightly batch. At steady state each run removes
+only the few rows that just aged out, so storage stays flat instead of
+sawtoothing, and there is no schedule to miss, which matters when the cron
+driving it is best-effort. An index on the timestamp keeps the delete an index
+scan, so its cost does not grow with the table.
+
+Incidents are deliberately never pruned. They are few, they are the part worth
+keeping, and a status page that quietly forgets old outages is worse than one
+that shows a long clean record.
+
 ### Checks run every ten minutes
 
 Frequent enough that charts look alive, infrequent enough to stay inside free
@@ -108,6 +127,7 @@ in the demo comes from seeded history rather than from polling aggressively.
   not enabled in the demo)
 - Public read-only status pages with per-day uptime history
 - Admin-token write access, and SSRF protection on monitored URLs
+- Retention pruning, bounding storage growth
 - Seeded demo data: 30 days across five endpoints
 - CI running lint, typecheck, tests and both production builds
 
@@ -124,10 +144,6 @@ Roughly in order of value.
 - **Response assertions** — check body content or a JSON field, not just the
   status code. A 200 that returns an error payload currently counts as up.
 - **Configurable per-endpoint intervals** — everything shares one schedule.
-- **Retention policy** — checks accumulate indefinitely. Measured, that is
-  449 bytes per row and about 118 MB a year at five endpoints, so storage is
-  years away from being a constraint; the reason to prune is tidiness, and
-  headroom if the endpoint count grows a lot.
 
 ## Deliberately out of scope
 

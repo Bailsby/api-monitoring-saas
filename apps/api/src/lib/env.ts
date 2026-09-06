@@ -1,5 +1,7 @@
 import 'dotenv/config'
 
+import { parseRetentionDays } from '../services/retention.service.js'
+
 const DEFAULT_ALLOWED_ORIGINS = ['http://localhost:3001']
 
 /**
@@ -18,3 +20,7 @@ export const allowedOrigins = (): string[] => {
 }
 
 export const port = (): number => Number(process.env.PORT ?? 3000)
+
+/** Days of raw check history to keep. 0 disables pruning. */
+export const retentionDays = (): number =>
+  parseRetentionDays(process.env.RETENTION_DAYS)
