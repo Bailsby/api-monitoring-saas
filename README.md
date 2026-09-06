@@ -36,11 +36,11 @@ as such.
 
 ## Live demo
 
-|                          |                                                                    |
-| ------------------------ | ------------------------------------------------------------------ |
-| **Dashboard**            | https://api-monitoring-saas-six.vercel.app                         |
-| **Public status pages**  | https://api-monitoring-saas-six.vercel.app/status                  |
-| **A service mid-outage** | https://api-monitoring-saas-six.vercel.app/status/payments-gateway |
+|                          |                                                         |
+| ------------------------ | ------------------------------------------------------- |
+| **Dashboard**            | https://monitor.jake-bailey.dev                         |
+| **Public status pages**  | https://monitor.jake-bailey.dev/status                  |
+| **A service mid-outage** | https://monitor.jake-bailey.dev/status/payments-gateway |
 
 The demo monitors real public APIs, so what you see is live rather than
 fixtures, alongside 30 days of seeded history so the charts have something to
