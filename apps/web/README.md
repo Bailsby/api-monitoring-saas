@@ -54,5 +54,6 @@ npm run build
 
 Both run in CI on every push.
 
-> Next.js in this repo may differ from what you have seen elsewhere — see
-> `AGENTS.md`, and check `node_modules/next/dist/docs/` before relying on an API.
+> This targets Next.js 16, which changed enough that older App Router advice
+> can be actively wrong. The version-matched docs ship in the package:
+> `node_modules/next/dist/docs/`.

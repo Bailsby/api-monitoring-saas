@@ -4,3 +4,7 @@ dist
 coverage
 .prisma
 .vscode
+
+# Agent instructions — local tooling, not part of the project
+CLAUDE.md
+AGENTS.md
