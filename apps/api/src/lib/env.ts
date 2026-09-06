@@ -24,3 +24,8 @@ export const port = (): number => Number(process.env.PORT ?? 3000)
 /** Days of raw check history to keep. 0 disables pruning. */
 export const retentionDays = (): number =>
   parseRetentionDays(process.env.RETENTION_DAYS)
+
+/** Public URL of the dashboard, when configured. Linked from the API index
+ * and from alert emails. */
+export const dashboardUrl = (): string | undefined =>
+  process.env.DASHBOARD_URL?.trim() || undefined
