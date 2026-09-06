@@ -23,8 +23,15 @@ services:
       - key: NODE_ENV
         value: production
 
-      # Set in the Render dashboard, not here — it is a secret.
+      # Set in the Render dashboard, not here — they are secrets.
+      # Pooled endpoint: what the running app uses.
       - key: DATABASE_URL
+        sync: false
+
+      # Direct (non-pooled) endpoint, used only by `prisma migrate deploy`.
+      # Migrations take a session-level advisory lock, which a transaction
+      # pooler cannot hold. Same string with `-pooler` removed from the host.
+      - key: DIRECT_DATABASE_URL
         sync: false
 
       # Comma-separated. Include the Vercel production domain, and the preview
