@@ -48,11 +48,11 @@ show. One endpoint is deliberately pointed at a URL that always returns an
 error, so there is always an open incident to look at.
 
 **On honesty about limits:** checks are driven by a scheduled CI job, and that
-scheduler is best-effort rather than guaranteed. It is asked to run every half
-hour; in practice it fires a handful of times a day, so the recent history is
-thinner than the seeded history beside it. A monitoring service you were paying
-for would run checks from several regions on a guaranteed schedule, and this
-does not pretend to.
+scheduler is best-effort rather than guaranteed — under load it drops runs by
+design. It is asked to run four times an hour; in practice it fires a handful
+of times a day, so recent history is thinner than the seeded history beside it.
+A monitoring service you were paying for would run checks from several regions
+on a guaranteed schedule, and this does not pretend to.
 
 ## A note on the demo being public
 

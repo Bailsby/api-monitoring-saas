@@ -113,19 +113,27 @@ that shows a long clean record.
 
 ### The check schedule is best-effort, and thinner than intended
 
-The workflow asks for a run every half hour. GitHub honours a small fraction of
+The workflow asks for four runs an hour. GitHub honours a small fraction of
 that: at `*/10` it fired roughly nine times a day rather than 144. The Actions
-history shows no failed or cancelled runs and no gaps in run numbering, so the
-triggers are not being queued and dropped — they are simply never created.
+history shows no failed or cancelled runs and no gaps in run numbering, so
+nothing is being queued and then cancelled — most triggers never produce a run
+at all.
 
-Scheduled events run on a shared, best-effort pool, and high-frequency crons on
-free public repositories are deprioritised. Nothing about the cron expression,
-the concurrency group or the job itself is wrong; every run that fires
-succeeds.
+This is documented rather than anomalous. Scheduled events run on a shared,
+best-effort pool, and the GitHub Actions documentation states plainly that
+under sufficient load "some queued jobs may be dropped". Nothing about the
+cron expression, the concurrency group or the job itself is wrong; every run
+that fires succeeds.
 
-`*/30` is currently an experiment to find out whether the interval is the
-variable. If the honoured rate does not improve, the fix is an external
-scheduler calling a trigger endpoint, which would also keep the API warm.
+The same documentation says high load times "include the start of every hour"
+and advises running "at a different time of the hour". Every schedule used
+here so far fired on :00 — precisely the minute named as worst — so the
+current setting runs at :07, :22, :37 and :52, avoiding the top of the hour
+and the quarter-hours everyone else reaches for first.
+
+If that does not improve the honoured rate, the offset is not the variable
+either, and the fix is an external scheduler calling a trigger endpoint —
+which would also keep the API warm.
 
 ## Built
 

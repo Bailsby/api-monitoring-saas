@@ -5,20 +5,23 @@ name: Run monitoring checks
 # idle with a slow cold start, and warming it on the same schedule keeps the
 # demo from looking broken to anyone who clicks it.
 #
-# GitHub's scheduler is best-effort. In practice it is far worse than
-# "late": at */10 it fired roughly 9 times a day rather than 144, and the
-# Actions history shows no cancelled or failed runs — the triggers simply
-# never happened. Run numbers are sequential, so nothing was queued and
-# dropped either.
+# GitHub's scheduler is best-effort, and the docs are explicit that under
+# load "some queued jobs may be dropped". At */10 this fired roughly 9
+# times a day rather than 144, with no failed or cancelled runs and no
+# gaps in run numbering — the triggers were never created at all.
 #
-# Trying */30 to find out whether GitHub deprioritises high-frequency
-# schedules specifically, or throttles regardless of the interval. If the
-# honoured rate stays near 9 a day, the interval is not the variable and
-# this needs an external scheduler instead.
+# The same docs say high load times "include the start of every hour" and
+# advise scheduling "at a different time of the hour". Every schedule this
+# repository has used fired on :00, the one minute GitHub names as worst.
+# These offsets avoid it, and also avoid :15/:30/:45, which are the next
+# most obvious minutes for everyone else to have picked.
+#
+# If the honoured rate does not improve, the interval is not the variable
+# and this needs an external scheduler calling a trigger endpoint.
 
 on:
   schedule:
-    - cron: '*/30 * * * *'
+    - cron: '7,22,37,52 * * * *'
   workflow_dispatch:
 
 # A late run must not stack up behind the previous one.
