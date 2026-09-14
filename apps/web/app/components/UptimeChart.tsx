@@ -13,6 +13,7 @@ import {
 import type { TooltipContentProps } from 'recharts'
 
 import { formatBucketLabel, type StatsWindow } from '@/lib/windows'
+import { createIsolatedDot } from './IsolatedDot'
 import type { Incident, SeriesPoint } from '@/types/stats'
 
 type Props = {
@@ -22,6 +23,12 @@ type Props = {
   /** Instant the data was fetched; keeps render pure. */
   now: number
 }
+
+const UptimeDot = createIsolatedDot(
+  'UptimeDot',
+  '#10b981',
+  (p) => p.uptimeIsolated === true,
+)
 
 function CustomTooltip({ active, payload, label }: TooltipContentProps) {
   if (!active || !payload?.length) return null
@@ -195,7 +202,7 @@ export default function UptimeChart({
                 stroke="#10b981"
                 strokeWidth={2}
                 fill="url(#uptimeGradient)"
-                dot={false}
+                dot={UptimeDot}
                 connectNulls={false}
                 activeDot={{ r: 4, fill: '#10b981', strokeWidth: 0 }}
               />

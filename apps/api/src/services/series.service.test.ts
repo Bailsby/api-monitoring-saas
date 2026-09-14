@@ -115,6 +115,113 @@ describe('buildSeries', () => {
     expect(counted).toBe(1)
   })
 
+  describe('isolated points', () => {
+    it('marks a point whose neighbours have no data', () => {
+      // Nothing can be drawn between this point and anything else, so the
+      // chart has to mark it individually or it renders as blank space.
+      const series = buildSeries(
+        [check('2026-09-05T06:30:00Z', true)],
+        '24h',
+        now,
+      )
+      const point = series.find((p) => p.uptime !== null)
+
+      expect(point?.uptimeIsolated).toBe(true)
+      expect(point?.responseTimeIsolated).toBe(true)
+    })
+
+    it('does not mark points that sit next to another point', () => {
+      const series = buildSeries(
+        [
+          check('2026-09-05T06:30:00Z', true),
+          check('2026-09-05T07:30:00Z', true),
+        ],
+        '24h',
+        now,
+      )
+
+      const measured = series.filter((p) => p.uptime !== null)
+
+      expect(measured).toHaveLength(2)
+      expect(measured.every((p) => p.uptimeIsolated)).toBe(false)
+    })
+
+    it('marks every point when checks are spread thinly across the window', () => {
+      // The shape seen in production: roughly one check every five hours, so
+      // no two hourly buckets are adjacent.
+      const series = buildSeries(
+        [
+          check('2026-09-04T14:00:00Z', true),
+          check('2026-09-04T20:00:00Z', true),
+          check('2026-09-05T02:00:00Z', true),
+          check('2026-09-05T08:00:00Z', true),
+        ],
+        '24h',
+        now,
+      )
+
+      const measured = series.filter((p) => p.uptime !== null)
+
+      expect(measured).toHaveLength(4)
+      expect(measured.every((p) => p.uptimeIsolated)).toBe(true)
+    })
+
+    it('never marks a point that has no value', () => {
+      const series = buildSeries([], '24h', now)
+
+      expect(series.every((p) => !p.uptimeIsolated)).toBe(true)
+      expect(series.every((p) => !p.responseTimeIsolated)).toBe(true)
+    })
+
+    it('treats the two metrics separately when a bucket only had failures', () => {
+      // All checks failed, so there is an uptime of 0 but no response time.
+      // Its neighbour has both, so uptime is not isolated but latency is.
+      const series = buildSeries(
+        [
+          check('2026-09-05T06:30:00Z', false, 0),
+          check('2026-09-05T07:30:00Z', true, 200),
+        ],
+        '24h',
+        now,
+      )
+
+      const failedBucket = series.find((p) => p.failures > 0)
+
+      expect(failedBucket?.uptime).toBe(0)
+      expect(failedBucket?.averageResponseTime).toBeNull()
+      expect(failedBucket?.uptimeIsolated).toBe(false)
+
+      const healthy = series.find((p) => p.averageResponseTime !== null)
+
+      expect(healthy?.responseTimeIsolated).toBe(true)
+    })
+
+    it('marks a lone point in the first bucket, which has no left neighbour', () => {
+      // now is 12:00, so a 24h window of hourly buckets starts at 12:00 the
+      // previous day. Reading past the start of the array must not stop this
+      // being recognised as isolated.
+      const series = buildSeries(
+        [check('2026-09-04T12:30:00Z', true)],
+        '24h',
+        now,
+      )
+
+      expect(series[0].uptime).toBe(100)
+      expect(series[0].uptimeIsolated).toBe(true)
+    })
+
+    it('marks a lone point in the last bucket, which has no right neighbour', () => {
+      const series = buildSeries(
+        [check('2026-09-05T11:30:00Z', true)],
+        '24h',
+        now,
+      )
+
+      expect(series.at(-1)?.uptime).toBe(100)
+      expect(series.at(-1)?.uptimeIsolated).toBe(true)
+    })
+  })
+
   it('rounds uptime to two decimal places', () => {
     const series = buildSeries(
       [

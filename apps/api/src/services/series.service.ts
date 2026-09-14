@@ -30,6 +30,17 @@ export type SeriesPoint = {
   averageResponseTime: number | null
   totalChecks: number
   failures: number
+  /**
+   * True when this point has a value but neither neighbour does.
+   *
+   * A line is drawn between adjacent points, so a point standing alone
+   * produces no line at all — with gaps left unconnected and dots hidden, it
+   * renders as nothing. Charts use these to mark such points individually.
+   * Tracked per metric because a bucket where every check failed has an uptime
+   * but no response time.
+   */
+  uptimeIsolated: boolean
+  responseTimeIsolated: boolean
 }
 
 type SeriesCheck = {
@@ -75,7 +86,7 @@ export const buildSeries = (
     }
   })
 
-  return buckets.map((bucket, index) => ({
+  const points = buckets.map((bucket, index) => ({
     start: new Date(start + index * bucketMs).toISOString(),
     totalChecks: bucket.totalChecks,
     failures: bucket.failures,
@@ -94,5 +105,22 @@ export const buildSeries = (
       bucket.responseCount === 0
         ? null
         : Math.round(bucket.responseTotal / bucket.responseCount),
+  }))
+
+  const isolatedAt = (
+    index: number,
+    hasValue: (point: (typeof points)[number] | undefined) => boolean,
+  ) =>
+    hasValue(points[index]) &&
+    !hasValue(points[index - 1]) &&
+    !hasValue(points[index + 1])
+
+  return points.map((point, index) => ({
+    ...point,
+    uptimeIsolated: isolatedAt(index, (p) => p?.uptime != null),
+    responseTimeIsolated: isolatedAt(
+      index,
+      (p) => p?.averageResponseTime != null,
+    ),
   }))
 }

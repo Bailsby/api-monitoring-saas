@@ -28,6 +28,12 @@ export type SeriesPoint = {
   averageResponseTime: number | null
   totalChecks: number
   failures: number
+  /**
+   * The point has a value but neither neighbour does, so no line can be drawn
+   * through it. Charts render these as a dot instead of leaving them invisible.
+   */
+  uptimeIsolated: boolean
+  responseTimeIsolated: boolean
 }
 
 export type EndpointStats = {

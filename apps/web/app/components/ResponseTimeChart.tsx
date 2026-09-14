@@ -13,12 +13,19 @@ import {
 import type { TooltipContentProps } from 'recharts'
 
 import { formatBucketLabel, type StatsWindow } from '@/lib/windows'
+import { createIsolatedDot } from './IsolatedDot'
 import type { SeriesPoint } from '@/types/stats'
 
 type Props = {
   series: SeriesPoint[]
   window: StatsWindow
 }
+
+const ResponseDot = createIsolatedDot(
+  'ResponseTimeDot',
+  '#3b82f6',
+  (p) => p.responseTimeIsolated === true,
+)
 
 function CustomTooltip({ active, payload, label }: TooltipContentProps) {
   if (!active || !payload?.length) return null
@@ -119,7 +126,7 @@ export default function ResponseTimeChart({ series, window }: Props) {
                 dataKey="averageResponseTime"
                 stroke="#3b82f6"
                 strokeWidth={2}
-                dot={false}
+                dot={ResponseDot}
                 connectNulls={false}
                 activeDot={{ r: 4, fill: '#3b82f6', strokeWidth: 0 }}
               />
