@@ -66,9 +66,9 @@ const pruneOldHistory = async () => {
 }
 
 /**
- * Runs a single polling pass and exits. Scheduling is external (GitHub Actions
- * cron every 10 minutes) rather than an in-process loop, so no always-on
- * process is needed — see ROADMAP.md for the deployment rationale.
+ * Runs a single polling pass and exits. Scheduling is external (a GitHub
+ * Actions cron) rather than an in-process loop, so no always-on process is
+ * needed — see ROADMAP.md for the deployment rationale.
  */
 const runOnce = async () => {
   const startedAt = Date.now()

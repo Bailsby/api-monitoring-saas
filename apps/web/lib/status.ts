@@ -52,7 +52,7 @@ export type StatusPage = {
 const serverApiUrl = () =>
   process.env.API_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL
 
-/** Revalidated rather than cached forever, since checks land every 10 minutes. */
+/** Revalidated rather than cached forever, since new checks land regularly. */
 const REVALIDATE_SECONDS = 60
 
 const fetchStatus = async <T>(path: string): Promise<T | null> => {

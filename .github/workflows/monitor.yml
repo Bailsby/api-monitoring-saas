@@ -5,12 +5,20 @@ name: Run monitoring checks
 # idle with a slow cold start, and warming it on the same schedule keeps the
 # demo from looking broken to anyone who clicks it.
 #
-# GitHub's scheduler is best-effort and can run late under load. That is fine
-# for a demo and is called out in the README rather than overclaimed.
+# GitHub's scheduler is best-effort. In practice it is far worse than
+# "late": at */10 it fired roughly 9 times a day rather than 144, and the
+# Actions history shows no cancelled or failed runs — the triggers simply
+# never happened. Run numbers are sequential, so nothing was queued and
+# dropped either.
+#
+# Trying */30 to find out whether GitHub deprioritises high-frequency
+# schedules specifically, or throttles regardless of the interval. If the
+# honoured rate stays near 9 a day, the interval is not the variable and
+# this needs an external scheduler instead.
 
 on:
   schedule:
-    - cron: '*/10 * * * *'
+    - cron: '*/30 * * * *'
   workflow_dispatch:
 
 # A late run must not stack up behind the previous one.

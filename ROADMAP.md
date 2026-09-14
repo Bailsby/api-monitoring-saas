@@ -13,7 +13,7 @@ building next. The [README](README.md) covers what it does and how to run it.
 | Dashboard and status pages | Vercel         | Next.js App Router  |
 | API                        | Render         | Fastify             |
 | Database                   | Neon           | Postgres via Prisma |
-| Checks                     | GitHub Actions | Every 10 minutes    |
+| Checks                     | GitHub Actions | Best-effort cron    |
 
 ### The worker runs once and exits
 
@@ -111,11 +111,21 @@ Incidents are deliberately never pruned. They are few, they are the part worth
 keeping, and a status page that quietly forgets old outages is worse than one
 that shows a long clean record.
 
-### Checks run every ten minutes
+### The check schedule is best-effort, and thinner than intended
 
-Frequent enough that charts look alive, infrequent enough to stay inside free
-tiers and to avoid rate-limiting the public APIs being monitored. Visual density
-in the demo comes from seeded history rather than from polling aggressively.
+The workflow asks for a run every half hour. GitHub honours a small fraction of
+that: at `*/10` it fired roughly nine times a day rather than 144. The Actions
+history shows no failed or cancelled runs and no gaps in run numbering, so the
+triggers are not being queued and dropped — they are simply never created.
+
+Scheduled events run on a shared, best-effort pool, and high-frequency crons on
+free public repositories are deprioritised. Nothing about the cron expression,
+the concurrency group or the job itself is wrong; every run that fires
+succeeds.
+
+`*/30` is currently an experiment to find out whether the interval is the
+variable. If the honoured rate does not improve, the fix is an external
+scheduler calling a trigger endpoint, which would also keep the API warm.
 
 ## Built
 

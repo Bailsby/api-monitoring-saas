@@ -17,7 +17,7 @@ export default function StatusLayout({ children }: { children: ReactNode }) {
             Service Status
           </Link>
           <span className="text-xs text-slate-400">
-            Updated every 10 minutes
+            Automated uptime monitoring
           </span>
         </div>
       </header>

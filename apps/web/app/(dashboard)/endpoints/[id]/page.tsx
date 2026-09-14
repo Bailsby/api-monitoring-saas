@@ -19,7 +19,9 @@ type PageProps = {
   params: Promise<{ id: string }>
 }
 
-const CHECK_INTERVAL_LABEL = 'Polling every 10 minutes'
+// Deliberately does not state a polling rate: the scheduler is
+// best-effort, so any figure here would be a claim the demo cannot keep.
+const CHECK_COUNT_SUBTITLE = 'Recorded in this window'
 
 export default function EndpointPage({ params }: PageProps) {
   const { id } = use(params)
@@ -188,7 +190,7 @@ export default function EndpointPage({ params }: PageProps) {
           label="Total Checks"
           value={stats.totalChecks}
           variant="info"
-          subtitle={CHECK_INTERVAL_LABEL}
+          subtitle={CHECK_COUNT_SUBTITLE}
         />
         <StatsCard
           label="Failures"

@@ -47,11 +47,12 @@ fixtures, alongside 30 days of seeded history so the charts have something to
 show. One endpoint is deliberately pointed at a URL that always returns an
 error, so there is always an open incident to look at.
 
-**On honesty about limits:** checks run on a scheduled job every 10 minutes, and
-that scheduler is best-effort — it can run late when the platform is busy. That
-is fine for a demonstration. A production monitoring service you were paying for
-would run checks from several regions on a guaranteed schedule, and this does
-not pretend to.
+**On honesty about limits:** checks are driven by a scheduled CI job, and that
+scheduler is best-effort rather than guaranteed. It is asked to run every half
+hour; in practice it fires a handful of times a day, so the recent history is
+thinner than the seeded history beside it. A monitoring service you were paying
+for would run checks from several regions on a guaranteed schedule, and this
+does not pretend to.
 
 ## A note on the demo being public
 
